@@ -1,0 +1,44 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: ledgr-aa-sandbox
+  main:
+    lazy-initialization: true
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ledgr_db
+    username: postgres
+    password: jana
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 2000
+      idle-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+ledgr:
+  sandbox:
+    mock-data-path: designmode_sample.json
+    fiu-id: LEDGR_FIU_IN
+    aa-gateway-url: http://localhost:8085/api/v1/aa
+    webhook-url: http://localhost:8085/api/v1/fiu/webhooks
