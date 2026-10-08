@@ -5,18 +5,13 @@ spring:
   application:
     name: ledgr-aa-sandbox
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   
   datasource:
     url: jdbc:postgresql://localhost:5432/ledgr_db
     username: postgres
     password: jana
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 2000
-      idle-timeout: 30000
 
   jpa:
     hibernate:

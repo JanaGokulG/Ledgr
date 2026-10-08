@@ -5,8 +5,11 @@ import com.ledgr.sandbox.entity.TransactionEntity;
 import com.ledgr.sandbox.repository.AccountRepository;
 import com.ledgr.sandbox.repository.TransactionRepository;
 import com.ledgr.sandbox.service.FiuIngestionService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,19 +17,27 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/fiu")
-@RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class LedgrFiuController {
+
+    private static final Logger log = LoggerFactory.getLogger(LedgrFiuController.class);
 
     private final FiuIngestionService fiuIngestionService;
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
+    public LedgrFiuController(FiuIngestionService fiuIngestionService,
+                              AccountRepository accountRepository,
+                              TransactionRepository transactionRepository) {
+        this.fiuIngestionService = fiuIngestionService;
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+    }
+
     /**
-     * One-click FIU sync trigger
+     * One-click FIU sync trigger to ingest RBI AA data into local database
      */
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncAccountAggregator(
@@ -44,11 +55,57 @@ public class LedgrFiuController {
     }
 
     /**
+     * Get single account by ID or Account Number
+     */
+    @GetMapping("/accounts/{accountId}")
+    public ResponseEntity<?> getAccountById(@PathVariable String accountId) {
+        Optional<AccountEntity> acc = accountRepository.findById(accountId);
+        if (acc.isEmpty()) {
+            acc = accountRepository.findByAccountNumber(accountId);
+        }
+        if (acc.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Account not found for id/number: " + accountId));
+        }
+        return ResponseEntity.ok(acc.get());
+    }
+
+    /**
      * Get transactions for a specific account
      */
     @GetMapping("/accounts/{accountId}/transactions")
     public ResponseEntity<List<TransactionEntity>> getAccountTransactions(@PathVariable String accountId) {
         return ResponseEntity.ok(transactionRepository.findByAccount_IdOrderByTransactionTimestampDesc(accountId));
+    }
+
+    /**
+     * Cross-account transaction listing with optional search, category, and type filters
+     */
+    @GetMapping("/transactions")
+    public ResponseEntity<Map<String, Object>> getTransactions(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String txnType,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "50") int size) {
+
+        int pageSize = Math.min(Math.max(size, 1), 200);
+        int pageIndex = Math.max(page, 0);
+
+        Page<TransactionEntity> pageResult = transactionRepository.searchTransactions(
+                (search != null && !search.isBlank()) ? search.trim() : null,
+                (category != null && !category.isBlank()) ? category.trim() : null,
+                (txnType != null && !txnType.isBlank()) ? txnType.trim().toUpperCase() : null,
+                PageRequest.of(pageIndex, pageSize)
+        );
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("totalElements", pageResult.getTotalElements());
+        response.put("totalPages", pageResult.getTotalPages());
+        response.put("currentPage", pageResult.getNumber());
+        response.put("pageSize", pageResult.getSize());
+        response.put("transactions", pageResult.getContent());
+
+        return ResponseEntity.ok(response);
     }
 
     /**

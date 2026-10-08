@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ledgr.sandbox.dto.rebit.AccountDataDto;
 import com.ledgr.sandbox.dto.rebit.AccountsWrapperDto;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -14,10 +14,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class MockRebitDataService {
+
+    private static final Logger log = LoggerFactory.getLogger(MockRebitDataService.class);
 
     private final ObjectMapper objectMapper;
 
@@ -25,6 +25,10 @@ public class MockRebitDataService {
     private String mockDataPath;
 
     private AccountsWrapperDto cachedPayload;
+
+    public MockRebitDataService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @PostConstruct
     public void init() {

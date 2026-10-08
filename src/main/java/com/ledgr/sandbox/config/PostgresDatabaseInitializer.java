@@ -1,7 +1,8 @@
 package com.ledgr.sandbox.config;
 
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,9 +11,10 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-@Slf4j
 @Configuration
 public class PostgresDatabaseInitializer {
+
+    private static final Logger log = LoggerFactory.getLogger(PostgresDatabaseInitializer.class);
 
     @Value("${spring.datasource.username:postgres}")
     private String username;

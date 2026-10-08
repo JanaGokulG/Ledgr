@@ -4,9 +4,8 @@ import com.ledgr.sandbox.entity.AccountEntity;
 import com.ledgr.sandbox.entity.TransactionEntity;
 import com.ledgr.sandbox.repository.AccountRepository;
 import com.ledgr.sandbox.repository.TransactionRepository;
-import com.ledgr.sandbox.util.MerchantCategorizerUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,15 +17,16 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class RealtimeTransactionSimulatorService {
+
+    private static final Logger log = LoggerFactory.getLogger(RealtimeTransactionSimulatorService.class);
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
 
     private ScheduledExecutorService streamingExecutor;
+    private int currentIntervalSeconds = 3;
     private final CopyOnWriteArrayList<Consumer<TransactionEntity>> listeners = new CopyOnWriteArrayList<>();
     private final Random random = new Random();
 
@@ -48,6 +48,12 @@ public class RealtimeTransactionSimulatorService {
             new MockScenario("UPI/102938475/college.canteen@sbi/Lunch & Chai", "Campus Canteen", "FOOD_DINING", "DEBIT", "UPI", 35.0, 120.0)
     );
 
+    public RealtimeTransactionSimulatorService(AccountRepository accountRepository,
+                                               TransactionRepository transactionRepository) {
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+    }
+
     public void registerListener(Consumer<TransactionEntity> listener) {
         listeners.add(listener);
     }
@@ -60,7 +66,7 @@ public class RealtimeTransactionSimulatorService {
     public TransactionEntity generateAndPersistTransaction(String preferredAccountNumber) {
         List<AccountEntity> accounts = accountRepository.findAll();
         if (accounts.isEmpty()) {
-            throw new IllegalStateException("No accounts present in database. Run AA Sync first.");
+            throw new IllegalStateException("No accounts present in database. Run FIU AA Sync first: POST /api/v1/fiu/sync");
         }
 
         // Default to Savings account if available
@@ -111,7 +117,7 @@ public class RealtimeTransactionSimulatorService {
         TransactionEntity saved = transactionRepository.save(txn);
         log.info("⚡ Live Simulated Txn: {} | {} | {} ₹{} | Bal: ₹{}", txnId, scenario.payee(), scenario.type(), amount, newBal);
 
-        // Notify all registered UI listeners
+        // Notify all registered listeners (SSE, WebSockets, background tasks)
         for (Consumer<TransactionEntity> listener : listeners) {
             try {
                 listener.accept(saved);
@@ -127,6 +133,7 @@ public class RealtimeTransactionSimulatorService {
         if (streamingExecutor != null && !streamingExecutor.isShutdown()) {
             return;
         }
+        this.currentIntervalSeconds = intervalSeconds > 0 ? intervalSeconds : 3;
         streamingExecutor = Executors.newSingleThreadScheduledExecutor();
         streamingExecutor.scheduleAtFixedRate(() -> {
             try {
@@ -134,8 +141,8 @@ public class RealtimeTransactionSimulatorService {
             } catch (Exception e) {
                 log.warn("Error in live streaming transaction: {}", e.getMessage());
             }
-        }, 2, intervalSeconds, TimeUnit.SECONDS);
-        log.info("🚀 Started Live Real-Time Transaction Stream (Interval: {}s)", intervalSeconds);
+        }, 1, this.currentIntervalSeconds, TimeUnit.SECONDS);
+        log.info("🚀 Started Live Real-Time Transaction Stream (Interval: {}s)", this.currentIntervalSeconds);
     }
 
     public synchronized void stopLiveStreaming() {
@@ -148,5 +155,9 @@ public class RealtimeTransactionSimulatorService {
 
     public boolean isStreamingActive() {
         return streamingExecutor != null && !streamingExecutor.isShutdown();
+    }
+
+    public int getCurrentIntervalSeconds() {
+        return currentIntervalSeconds;
     }
 }

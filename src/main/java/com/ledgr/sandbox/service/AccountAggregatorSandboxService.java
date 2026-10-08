@@ -6,19 +6,18 @@ import com.ledgr.sandbox.entity.ConsentEntity;
 import com.ledgr.sandbox.entity.FiSessionEntity;
 import com.ledgr.sandbox.repository.ConsentRepository;
 import com.ledgr.sandbox.repository.FiSessionRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AccountAggregatorSandboxService {
+
+    private static final Logger log = LoggerFactory.getLogger(AccountAggregatorSandboxService.class);
 
     private final ConsentRepository consentRepository;
     private final FiSessionRepository fiSessionRepository;
@@ -27,10 +26,18 @@ public class AccountAggregatorSandboxService {
     @Value("${ledgr.sandbox.fiu-id:LEDGR_FIU_IN}")
     private String fiuId;
 
+    public AccountAggregatorSandboxService(ConsentRepository consentRepository,
+                                           FiSessionRepository fiSessionRepository,
+                                           MockRebitDataService mockRebitDataService) {
+        this.consentRepository = consentRepository;
+        this.fiSessionRepository = fiSessionRepository;
+        this.mockRebitDataService = mockRebitDataService;
+    }
+
     @Transactional
     public ConsentResponseDto createConsent(ConsentRequestDto request) {
         String consentId = UUID.randomUUID().toString();
-        String approvalUrl = "http://localhost:8085/sandbox-ui?consentId=" + consentId;
+        String approvalUrl = "http://localhost:8085/api/v1/aa/consents/" + consentId + "/approve";
 
         ConsentEntity entity = ConsentEntity.builder()
                 .id(consentId)

@@ -5,23 +5,29 @@ import com.ledgr.sandbox.dto.rebit.AccountsWrapperDto;
 import com.ledgr.sandbox.entity.ConsentEntity;
 import com.ledgr.sandbox.service.AccountAggregatorSandboxService;
 import com.ledgr.sandbox.service.MockRebitDataService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/v1/aa")
-@RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class AccountAggregatorSandboxController {
 
+    private static final Logger log = LoggerFactory.getLogger(AccountAggregatorSandboxController.class);
+
     private final AccountAggregatorSandboxService aaSandboxService;
     private final MockRebitDataService mockRebitDataService;
+
+    public AccountAggregatorSandboxController(AccountAggregatorSandboxService aaSandboxService,
+                                              MockRebitDataService mockRebitDataService) {
+        this.aaSandboxService = aaSandboxService;
+        this.mockRebitDataService = mockRebitDataService;
+    }
 
     @PostMapping("/consents")
     public ResponseEntity<ConsentResponseDto> createConsent(@RequestBody(required = false) ConsentRequestDto request) {

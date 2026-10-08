@@ -7,8 +7,8 @@ import com.ledgr.sandbox.entity.TransactionEntity;
 import com.ledgr.sandbox.repository.AccountRepository;
 import com.ledgr.sandbox.repository.TransactionRepository;
 import com.ledgr.sandbox.util.MerchantCategorizerUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,30 +16,35 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class FiuIngestionService {
+
+    private static final Logger log = LoggerFactory.getLogger(FiuIngestionService.class);
 
     private final AccountAggregatorSandboxService aaSandboxService;
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+
+    public FiuIngestionService(AccountAggregatorSandboxService aaSandboxService,
+                               AccountRepository accountRepository,
+                               TransactionRepository transactionRepository) {
+        this.aaSandboxService = aaSandboxService;
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+    }
 
     @FunctionalInterface
     public interface SyncProgressCallback {
         void onProgress(int currentStep, int totalSteps, String stepTitle, String message);
     }
 
-    /**
-     * Executes realistic multi-step AA handshake with configurable delays
-     */
     public Map<String, Object> executeFullSyncWithRealisticDelay(String customerVpa, SyncProgressCallback callback) {
         log.info("Starting realistic multi-phase AA Sandbox Handshake for customer: {}", customerVpa);
         final int TOTAL_STEPS = 5;
 
         // Step 1: Consent Negotiation
         if (callback != null) callback.onProgress(1, TOTAL_STEPS, "1/5 Initiating AA Consent", "Dispatching ReBIT consent request to Setu AA Gateway...");
-        sleep(700);
+        sleep(100);
 
         ConsentRequestDto consentReq = ConsentRequestDto.builder()
                 .customerId(customerVpa != null ? customerVpa : "student@setuaa")
@@ -54,12 +59,12 @@ public class FiuIngestionService {
 
         // Step 2: OTP & Digital Signature Verification
         if (callback != null) callback.onProgress(2, TOTAL_STEPS, "2/5 Verifying Student OTP & Digital Signature", "Verifying 6-digit OTP (123456) & generating ReBIT Consent Artifact...");
-        sleep(900);
+        sleep(100);
         aaSandboxService.approveConsent(consentRes.getId(), ConsentApprovalDto.builder().otp("123456").action("APPROVE").build());
 
         // Step 3: FIP Bank Data Session
         if (callback != null) callback.onProgress(3, TOTAL_STEPS, "3/5 Querying Banking Provider (ICICI Bank FIP)", "Negotiating ECDH Curve25519 key-exchange with bank server...");
-        sleep(1100);
+        sleep(100);
         FIRequestDto fiReq = FIRequestDto.builder()
                 .consentId(consentRes.getId())
                 .dateTimeRange(consentReq.getDateRange())
@@ -68,12 +73,11 @@ public class FiuIngestionService {
 
         // Step 4: Statement Fetch & Decryption
         if (callback != null) callback.onProgress(4, TOTAL_STEPS, "4/5 Decrypting Statement JSON Payload", "Downloading 256-bit encrypted statement packet & deserializing ReBIT schema...");
-        sleep(800);
+        sleep(100);
         FIFetchResponseDto fetchRes = aaSandboxService.fetchFiData(fiRes.getSessionId());
 
         // Step 5: Ledger Ingestion & Categorization
-        if (callback != null) callback.onProgress(5, TOTAL_STEPS, "5/5 Normalizing & Ingesting into PostgreSQL", "Persisting 3 accounts and categorizing 138 transactions into database...");
-        sleep(500);
+        if (callback != null) callback.onProgress(5, TOTAL_STEPS, "5/5 Normalizing & Ingesting into Database", "Persisting accounts and categorizing transactions into database...");
         IngestionResult result = ingestRebitData(fetchRes.getPayload());
 
         Map<String, Object> response = new LinkedHashMap<>();
