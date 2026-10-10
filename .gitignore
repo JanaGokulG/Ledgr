@@ -48,3 +48,9 @@ Thumbs.db
 # Node / temporary files (if any)
 node_modules/
 .npm/
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+

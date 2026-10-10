@@ -1,16 +1,16 @@
 server:
-  port: 8085
+  port: ${SERVER_PORT:8085}
 
 spring:
   application:
-    name: ledgr-aa-sandbox
+    name: ledgr-backend
   main:
     lazy-initialization: true
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/ledgr_db
-    username: postgres
-    password: jana
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ledgr_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:jana}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 5
@@ -36,9 +36,19 @@ spring:
     deserialization:
       fail-on-unknown-properties: false
 
-ledgr:
-  sandbox:
-    mock-data-path: designmode_sample.json
-    fiu-id: LEDGR_FIU_IN
-    aa-gateway-url: http://localhost:8085/api/v1/aa
-    webhook-url: http://localhost:8085/api/v1/fiu/webhooks
+banking:
+  client-id: ${BANKING_API_CLIENT_ID:${PLAID_CLIENT_ID:}}
+  secret: ${BANKING_API_SECRET:${PLAID_SECRET:}}
+  env: ${BANKING_API_ENV:${PLAID_ENV:sandbox}}
+  base-url: ${BANKING_API_BASE_URL:${PLAID_BASE_URL:https://sandbox.plaid.com}}
+  institution-id: ${BANKING_INSTITUTION_ID:${PLAID_INSTITUTION_ID:ins_20}}
+  webhook-url: ${BANKING_WEBHOOK_URL:${PLAID_WEBHOOK_URL:https://www.genericwebhookurl.com/webhook}}
+  override-username: ${BANKING_OVERRIDE_USERNAME:${PLAID_OVERRIDE_USERNAME:user_good}}
+  override-password: ${BANKING_OVERRIDE_PASSWORD:${PLAID_OVERRIDE_PASSWORD:pass_good}}
+  initial-products:
+    - auth
+    - transactions
+    - identity
+    - investments
+    - liabilities
+  transaction-delay-ms: ${TRANSACTION_DELAY_MS:150}
