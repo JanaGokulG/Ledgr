@@ -86,7 +86,9 @@ public class LedgrFiuController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String txnType,
             @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "50") int size) {
+            @RequestParam(required = false, defaultValue = "50") int size,
+            @RequestParam(required = false, defaultValue = "false") boolean randomOrder,
+            @RequestParam(required = false, defaultValue = "0") int delayMs) {
 
         int pageSize = Math.min(Math.max(size, 1), 200);
         int pageIndex = Math.max(page, 0);
@@ -98,12 +100,24 @@ public class LedgrFiuController {
                 PageRequest.of(pageIndex, pageSize)
         );
 
+        List<TransactionEntity> transactions = new ArrayList<>(pageResult.getContent());
+        if (randomOrder) {
+            Collections.shuffle(transactions);
+        }
+
+        if (delayMs > 0) {
+            try {
+                Thread.sleep(Math.min(delayMs, 2000));
+            } catch (InterruptedException ignored) {}
+        }
+
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("totalElements", pageResult.getTotalElements());
         response.put("totalPages", pageResult.getTotalPages());
         response.put("currentPage", pageResult.getNumber());
         response.put("pageSize", pageResult.getSize());
-        response.put("transactions", pageResult.getContent());
+        response.put("randomOrder", randomOrder);
+        response.put("transactions", transactions);
 
         return ResponseEntity.ok(response);
     }

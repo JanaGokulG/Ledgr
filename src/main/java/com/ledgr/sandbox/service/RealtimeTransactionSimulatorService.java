@@ -27,7 +27,12 @@ public class RealtimeTransactionSimulatorService {
 
     private ScheduledExecutorService streamingExecutor;
     private int currentIntervalSeconds = 3;
+    private volatile int minDelayMs = 1200;
+    private volatile int maxDelayMs = 3200;
+    private final java.util.concurrent.atomic.AtomicLong totalStreamedCount = new java.util.concurrent.atomic.AtomicLong(0);
+    private final java.util.concurrent.atomic.AtomicLong lastDelayMs = new java.util.concurrent.atomic.AtomicLong(2000);
     private final CopyOnWriteArrayList<Consumer<TransactionEntity>> listeners = new CopyOnWriteArrayList<>();
+    private final ConcurrentLinkedDeque<TransactionEntity> recentStreamedTransactions = new ConcurrentLinkedDeque<>();
     private final Random random = new Random();
 
     public record MockScenario(String narration, String payee, String category, String type, String mode, double minAmt, double maxAmt) {}
@@ -45,7 +50,10 @@ public class RealtimeTransactionSimulatorService {
             new MockScenario("NEFT-UNIV928371-RESEARCH STIPEND-DRDO LAB PROJECT", "University Stipend", "SCHOLARSHIP_STIPEND", "CREDIT", "FT", 8000.0, 15000.0),
             new MockScenario("UPI/382910283/freelance.client@icici/Frontend UI Design Project", "Freelance Client", "FREELANCE_INCOME", "CREDIT", "UPI", 3500.0, 12000.0),
             new MockScenario("ATM/ICIC092/CAMPUS ATM CASH WITHDRAWAL", "ATM Cash", "ATM_CASH_WITHDRAWAL", "DEBIT", "ATM", 500.0, 2000.0),
-            new MockScenario("UPI/102938475/college.canteen@sbi/Lunch & Chai", "Campus Canteen", "FOOD_DINING", "DEBIT", "UPI", 35.0, 120.0)
+            new MockScenario("UPI/102938475/college.canteen@sbi/Lunch & Chai", "Campus Canteen", "FOOD_DINING", "DEBIT", "UPI", 35.0, 120.0),
+            new MockScenario("UPI/558291049/blinkit@hdfc/Hostel Snacks & Energy Drinks", "Blinkit", "FOOD_DINING", "DEBIT", "UPI", 85.0, 420.0),
+            new MockScenario("UPI/771928301/bookmyshow@icici/Weekend Movie Ticket", "BookMyShow", "ENTERTAINMENT", "DEBIT", "UPI", 220.0, 680.0),
+            new MockScenario("UPI/882910394/campus.xerox@sbi/Exam Notes Printing", "Campus Stationery", "EDUCATION", "DEBIT", "UPI", 25.0, 150.0)
     );
 
     public RealtimeTransactionSimulatorService(AccountRepository accountRepository,
@@ -66,29 +74,77 @@ public class RealtimeTransactionSimulatorService {
     public TransactionEntity generateAndPersistTransaction(String preferredAccountNumber) {
         List<AccountEntity> accounts = accountRepository.findAll();
         if (accounts.isEmpty()) {
-            throw new IllegalStateException("No accounts present in database. Run FIU AA Sync first: POST /api/v1/fiu/sync");
+            log.debug("No accounts found in database. Skipping generation cycle until accounts are seeded.");
+            return null;
         }
 
-        // Default to Savings account if available
-        AccountEntity targetAccount = accounts.stream()
-                .filter(a -> preferredAccountNumber != null ? a.getAccountNumber().equals(preferredAccountNumber) : ("SAVINGS".equalsIgnoreCase(a.getAccountType()) || "DEPOSIT".equalsIgnoreCase(a.getFiType())))
-                .findFirst()
-                .orElse(accounts.get(0));
+        // Pick account in random order with preference for Savings/Deposit
+        AccountEntity targetAccount;
+        if (preferredAccountNumber != null) {
+            targetAccount = accounts.stream()
+                    .filter(a -> a.getAccountNumber().equals(preferredAccountNumber))
+                    .findFirst()
+                    .orElse(accounts.get(0));
+        } else {
+            List<AccountEntity> activeAccounts = accounts.stream()
+                    .filter(a -> "SAVINGS".equalsIgnoreCase(a.getAccountType()) || "DEPOSIT".equalsIgnoreCase(a.getFiType()))
+                    .toList();
+            if (!activeAccounts.isEmpty()) {
+                targetAccount = activeAccounts.get(random.nextInt(activeAccounts.size()));
+            } else {
+                targetAccount = accounts.get(random.nextInt(accounts.size()));
+            }
+        }
 
-        MockScenario scenario = scenarios.get(random.nextInt(scenarios.size()));
-        double rawAmt = scenario.minAmt() + (scenario.maxAmt() - scenario.minAmt()) * random.nextDouble();
-        BigDecimal amount = BigDecimal.valueOf(rawAmt).setScale(2, RoundingMode.HALF_UP);
+        String narration;
+        String payee;
+        String category;
+        String txnType;
+        String paymentMode;
+        BigDecimal amount;
+
+        // Repetition logic: 40% chance to repeat and adapt an existing historical transaction, 60% chance mock scenario
+        List<TransactionEntity> existingTxns = transactionRepository.findByAccount_IdOrderByTransactionTimestampDesc(targetAccount.getId());
+        if (existingTxns != null && !existingTxns.isEmpty() && random.nextDouble() < 0.40) {
+            TransactionEntity sampleToRepeat = existingTxns.get(random.nextInt(existingTxns.size()));
+            narration = sampleToRepeat.getNarration() != null ? sampleToRepeat.getNarration() : "Recurring Transaction";
+            payee = sampleToRepeat.getMerchantPayee() != null ? sampleToRepeat.getMerchantPayee() : "Merchant Partner";
+            category = sampleToRepeat.getCategory() != null ? sampleToRepeat.getCategory() : "GENERAL";
+            txnType = sampleToRepeat.getTxnType() != null ? sampleToRepeat.getTxnType() : "DEBIT";
+            paymentMode = sampleToRepeat.getPaymentMode() != null ? sampleToRepeat.getPaymentMode() : "UPI";
+            
+            // Variate amount slightly (+/- 10%) or use exact for repetition
+            BigDecimal baseAmt = sampleToRepeat.getAmount() != null ? sampleToRepeat.getAmount() : BigDecimal.valueOf(100.0);
+            double varianceFactor = 0.90 + (0.20 * random.nextDouble());
+            amount = baseAmt.multiply(BigDecimal.valueOf(varianceFactor)).setScale(2, RoundingMode.HALF_UP);
+            if (amount.compareTo(BigDecimal.valueOf(5.0)) < 0) {
+                amount = BigDecimal.valueOf(50.00);
+            }
+        } else {
+            MockScenario scenario = scenarios.get(random.nextInt(scenarios.size()));
+            narration = scenario.narration();
+            payee = scenario.payee();
+            category = scenario.category();
+            txnType = scenario.type();
+            paymentMode = scenario.mode();
+            double rawAmt = scenario.minAmt() + (scenario.maxAmt() - scenario.minAmt()) * random.nextDouble();
+            amount = BigDecimal.valueOf(rawAmt).setScale(2, RoundingMode.HALF_UP);
+        }
 
         BigDecimal currentBal = targetAccount.getCurrentBalance() != null ? targetAccount.getCurrentBalance() : BigDecimal.ZERO;
         BigDecimal newBal;
-        if ("CREDIT".equalsIgnoreCase(scenario.type())) {
+        if ("CREDIT".equalsIgnoreCase(txnType)) {
             newBal = currentBal.add(amount);
         } else {
             newBal = currentBal.subtract(amount);
-            if (newBal.compareTo(BigDecimal.ZERO) < 0) {
-                // Adjust to small nominal debit if balance is low
-                amount = BigDecimal.valueOf(25.00);
-                newBal = currentBal.subtract(amount);
+            if (newBal.compareTo(BigDecimal.valueOf(500.00)) < 0) {
+                // If balance drops low, simulate a parent transfer / stipend credit to keep liquidity flowing
+                txnType = "CREDIT";
+                category = "PARENT_ALLOWANCE";
+                payee = "Parent UPI Transfer";
+                narration = "UPI/998127492/family.support@sbi/Monthly Allowance Topup";
+                amount = BigDecimal.valueOf(5000.00 + random.nextInt(5000));
+                newBal = currentBal.add(amount);
             }
         }
 
@@ -102,20 +158,29 @@ public class RealtimeTransactionSimulatorService {
         TransactionEntity txn = TransactionEntity.builder()
                 .account(targetAccount)
                 .txnId(txnId)
-                .txnType(scenario.type())
-                .paymentMode(scenario.mode())
+                .txnType(txnType)
+                .paymentMode(paymentMode)
                 .amount(amount)
                 .balanceAfterTxn(newBal)
                 .transactionTimestamp(timestamp)
                 .valueDate(valueDate)
-                .narration(scenario.narration())
+                .narration(narration)
                 .referenceNumber("RFN" + (100000000 + random.nextInt(899999999)))
-                .category(scenario.category())
-                .merchantPayee(scenario.payee())
+                .category(category)
+                .merchantPayee(payee)
                 .build();
 
         TransactionEntity saved = transactionRepository.save(txn);
-        log.info("⚡ Live Simulated Txn: {} | {} | {} ₹{} | Bal: ₹{}", txnId, scenario.payee(), scenario.type(), amount, newBal);
+        totalStreamedCount.incrementAndGet();
+
+        // Maintain in thread-safe circular buffer (keep last 50)
+        recentStreamedTransactions.addFirst(saved);
+        while (recentStreamedTransactions.size() > 50) {
+            recentStreamedTransactions.pollLast();
+        }
+
+        log.info("⚡ Live Simulated Txn #{}: {} | {} | {} ₹{} | Bal: ₹{}",
+                totalStreamedCount.get(), txnId, payee, txnType, amount, newBal);
 
         // Notify all registered listeners (SSE, WebSockets, background tasks)
         for (Consumer<TransactionEntity> listener : listeners) {
@@ -129,20 +194,48 @@ public class RealtimeTransactionSimulatorService {
         return saved;
     }
 
-    public synchronized void startLiveStreaming(int intervalSeconds) {
+    /**
+     * Start live streaming with random delay and infinite recurrence so data flow never stops
+     */
+    public synchronized void startLiveStreamingWithRandomDelay(int minMs, int maxMs) {
         if (streamingExecutor != null && !streamingExecutor.isShutdown()) {
             return;
         }
-        this.currentIntervalSeconds = intervalSeconds > 0 ? intervalSeconds : 3;
+        this.minDelayMs = Math.max(minMs, 500);
+        this.maxDelayMs = Math.max(maxMs, this.minDelayMs + 200);
         streamingExecutor = Executors.newSingleThreadScheduledExecutor();
-        streamingExecutor.scheduleAtFixedRate(() -> {
-            try {
-                generateAndPersistTransaction(null);
-            } catch (Exception e) {
-                log.warn("Error in live streaming transaction: {}", e.getMessage());
-            }
-        }, 1, this.currentIntervalSeconds, TimeUnit.SECONDS);
-        log.info("🚀 Started Live Real-Time Transaction Stream (Interval: {}s)", this.currentIntervalSeconds);
+
+        log.info("🚀 Started Live Real-Time Transaction Stream with RANDOM DELAYS ({}ms - {}ms) & Repetition",
+                this.minDelayMs, this.maxDelayMs);
+
+        scheduleNextRandomCycle();
+    }
+
+    private void scheduleNextRandomCycle() {
+        if (streamingExecutor == null || streamingExecutor.isShutdown()) {
+            return;
+        }
+        long delay = minDelayMs + (long) (random.nextDouble() * (maxDelayMs - minDelayMs));
+        lastDelayMs.set(delay);
+
+        try {
+            streamingExecutor.schedule(() -> {
+                try {
+                    generateAndPersistTransaction(null);
+                } catch (Exception e) {
+                    log.warn("Non-fatal stream generation notice (data flow will continue): {}", e.getMessage());
+                } finally {
+                    scheduleNextRandomCycle();
+                }
+            }, delay, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException ignored) {
+            // Executor was shutdown
+        }
+    }
+
+    public synchronized void startLiveStreaming(int intervalSeconds) {
+        int intervalMs = Math.max(intervalSeconds, 1) * 1000;
+        startLiveStreamingWithRandomDelay(Math.max(intervalMs - 500, 500), intervalMs + 1000);
     }
 
     public synchronized void stopLiveStreaming() {
@@ -158,6 +251,27 @@ public class RealtimeTransactionSimulatorService {
     }
 
     public int getCurrentIntervalSeconds() {
-        return currentIntervalSeconds;
+        return (int) (lastDelayMs.get() / 1000);
+    }
+
+    public long getLastDelayMs() {
+        return lastDelayMs.get();
+    }
+
+    public int getMinDelayMs() {
+        return minDelayMs;
+    }
+
+    public int getMaxDelayMs() {
+        return maxDelayMs;
+    }
+
+    public long getTotalStreamedCount() {
+        return totalStreamedCount.get();
+    }
+
+    public List<TransactionEntity> getRecentStreamTransactions(int limit) {
+        int count = Math.max(limit, 1);
+        return recentStreamedTransactions.stream().limit(count).toList();
     }
 }

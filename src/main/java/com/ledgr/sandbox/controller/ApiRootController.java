@@ -8,7 +8,14 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@RestController
+import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.*;
+
+@Controller
 @CrossOrigin(origins = "*")
 public class ApiRootController {
 
@@ -21,7 +28,13 @@ public class ApiRootController {
         this.transactionRepository = transactionRepository;
     }
 
-    @GetMapping(value = {"/", "/api", "/api/v1"})
+    @GetMapping("/")
+    public String index() {
+        return "forward:/index.html";
+    }
+
+    @GetMapping(value = {"/api", "/api/v1"})
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getApiOverview() {
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("service", "Ledgr RBI Account Aggregator (AA) & Student FinTech Backend");

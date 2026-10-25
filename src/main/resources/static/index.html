@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledgr – RBI Account Aggregator & Student FinTech OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #070a12;
+            --bg-surface: rgba(15, 23, 42, 0.72);
+            --bg-surface-hover: rgba(30, 41, 59, 0.85);
+            --bg-surface-active: rgba(51, 65, 85, 0.6);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(99, 102, 241, 0.5);
+            --accent-primary: #6366f1;
+            --accent-violet: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --accent-gradient-subtle: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%);
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-sky: #0ea5e9;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 26px;
+            --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+                radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.12) 0%, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px 20px 40px 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Top Navigation Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-xl);
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 24px;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            letter-spacing: 0.5px;
+        }
+
+        .brand-text p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .stream-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: #a5b4fc;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse 1.8s infinite;
+        }
+
+        .pulse-stream {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            box-shadow: 0 0 10px #6366f1;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+
+        /* Top Metrics Row */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.25s ease, border-color 0.25s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-focus);
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-gradient);
+            opacity: 0.7;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .metric-icon {
+            font-size: 18px;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .metric-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .metric-sub .badge {
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .badge-safe { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-danger { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+        /* Main Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            background: var(--bg-surface);
+            padding: 8px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-glass);
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-button.active {
+            color: #fff;
+            background: var(--accent-gradient);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+        }
+
+        /* Tab Content Panes */
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Layout Grid */
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.94;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--border-glass);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-success:hover {
+            background: rgba(16, 185, 129, 0.28);
+        }
+
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.15);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 63, 94, 0.25);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+        }
+
+        /* AA Lifecycle Steps */
+        .step-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .step-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            transition: all 0.25s ease;
+        }
+
+        .step-box.active {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+        }
+
+        .step-box.completed {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .step-num-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .step-box.active .step-num-badge {
+            background: var(--accent-primary);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+
+        .step-box.completed .step-num-badge {
+            background: var(--accent-emerald);
+            color: #fff;
+        }
+
+        .step-details h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .step-details p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .step-details code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #38bdf8;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 14px;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        select.form-control {
+            background-color: #0b1120;
+            color: #fff;
+        }
+
+        /* Accounts Cards */
+        .accounts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .account-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .account-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-focus);
+        }
+
+        .account-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .account-tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-savings { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+        .tag-fd { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .tag-rd { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+        .acc-num-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .acc-balance-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+
+        .acc-meta-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-glass);
+            padding-top: 12px;
+        }
+
+        .acc-meta-item {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .acc-meta-item strong {
+            color: var(--text-primary);
+        }
+
+        /* Filter Toolbar */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glass);
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 34px;
+            border-radius: var(--radius-sm);
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-glass);
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Transactions Table */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glass);
+            background: rgba(0, 0, 0, 0.25);
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+        }
+
+        th {
+            background: #0d1527;
+            position: sticky;
+            top: 0;
+            padding: 14px 16px;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid var(--border-glass);
+            z-index: 2;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: #e2e8f0;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .amount-debit {
+            font-family: 'JetBrains Mono', monospace;
+            color: #fb7185;
+            font-weight: 600;
+        }
+
+        .amount-credit {
+            font-family: 'JetBrains Mono', monospace;
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .category-pill {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+        }
+
+        .mode-pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+
+        /* Live Stream Ticker / Feed */
+        .live-ticker-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .ticker-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.025);
+            border: 1px solid var(--border-glass);
+            transition: all 0.3s ease;
+        }
+
+        .ticker-card.new-arrival {
+            animation: highlightIn 0.8s ease;
+            border-color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        @keyframes highlightIn {
+            0% { transform: scale(1.02); background: rgba(99, 102, 241, 0.3); }
+            100% { transform: scale(1); }
+        }
+
+        .ticker-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ticker-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .ticker-meta h5 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .ticker-meta p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .ticker-right {
+            text-align: right;
+        }
+
+        /* Log Terminal Box */
+        .terminal-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #03060c;
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            color: #94a3b8;
+            height: 180px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .log-entry { margin-bottom: 4px; }
+        .log-entry.success { color: #34d399; }
+        .log-entry.info { color: #818cf8; }
+        .log-entry.warn { color: #f59e0b; }
+
+        /* Calculators Grid */
+        .calculator-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 24px;
+        }
+
+        .calc-result-box {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .calc-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13px;
+        }
+
+        .calc-stat:last-child {
+            border-bottom: none;
+        }
+
+        .calc-stat-label {
+            color: var(--text-secondary);
+        }
+
+        .calc-stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .calc-stat-val.highlight {
+            color: #38bdf8;
+            font-size: 16px;
+        }
+
+        /* Raw JSON Box */
+        .raw-json-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: #050811;
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            color: #38bdf8;
+            max-height: 520px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Checkbox slider */
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .switch-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Top Header -->
+    <header>
+        <div class="brand">
+            <div class="brand-logo">L</div>
+            <div class="brand-text">
+                <h1>Ledgr <span class="brand-badge">AA SANDBOX v1.0</span></h1>
+                <p>RBI Account Aggregator & Setu Gateway Simulation OS</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="status-pill" id="healthStatusPill">
+                <div class="pulse-dot"></div>
+                <span id="healthStatusText">Backend Online (Port 8085)</span>
+            </div>
+            <div class="stream-pill" id="streamStatusPill">
+                <div class="pulse-stream"></div>
+                <span id="streamStatusText">Stream Active (Random Delay)</span>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btnQuickSync" onclick="runFullAaSync()">
+                <span>⚡</span> One-Click Sync
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btnInstantTxn" onclick="injectInstantTxn()">
+                <span>💸</span> Inject Txn
+            </button>
+        </div>
+    </header>
+
+    <!-- Overview Metrics Cards -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-header">
+                <span class="metric-label">Liquid Savings</span>
+                <span class="metric-icon">💳</span>
+            </div>
+            <div class="metric-value" id="valLiquidBalance">₹0.00</div>
+            <div class="metric-sub">
+                <span>Direct Savings Balance</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span class="metric-label">FD / RD Assets</span>
+                <span class="metric-icon">🏦</span>
+            </div>
+            <div class="metric-value" id="valLockedAssets">₹0.00</div>
+            <div class="metric-sub">
+                <span>Term & Recurring Deposits</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span class="metric-label">Total Net Worth</span>
+                <span class="metric-icon">📈</span>
+            </div>
+            <div class="metric-value" id="valNetWorth">₹0.00</div>
+            <div class="metric-sub">
+                <span>Liquid + Term Assets</span>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-header">
+                <span class="metric-label">Scholarship Runway</span>
+                <span class="metric-icon">🎓</span>
+            </div>
+            <div class="metric-value" id="valScholarshipRunway">0.0 mo</div>
+            <div class="metric-sub" id="runwayStatusSub">
+                <span class="badge badge-safe" id="runwayBadge">CALCULATING</span>
+                <span id="burnRateText">Burn: ₹0/mo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="nav-tabs">
+        <button class="tab-button active" id="tabBtnAccounts" onclick="switchTab('paneAccounts')">
+            <span>💳</span> Accounts & Ledger
+        </button>
+        <button class="tab-button" id="tabBtnSimulator" onclick="switchTab('paneSimulator')">
+            <span>⚡</span> Live Stream Pump
+        </button>
+        <button class="tab-button" id="tabBtnAaFlow" onclick="switchTab('paneAaFlow')">
+            <span>🏛️</span> RBI AA Protocol Sandbox
+        </button>
+        <button class="tab-button" id="tabBtnTools" onclick="switchTab('paneTools')">
+            <span>🎓</span> Student FinTech Tools
+        </button>
+        <button class="tab-button" id="tabBtnRaw" onclick="switchTab('paneRaw')">
+            <span>📜</span> ReBIT Mock JSON
+        </button>
+    </div>
+
+    <!-- PANE 1: ACCOUNTS & LEDGER -->
+    <div class="tab-pane active" id="paneAccounts">
+        <div class="card-title">
+            <div class="card-title-left">
+                <span>🏦</span> Linked Bank Accounts (RBI AA Multi-Account Spec)
+            </div>
+            <div>
+                <button class="btn btn-secondary btn-sm" onclick="loadAccountsAndOverview()">
+                    <span>🔄</span> Refresh Accounts
+                </button>
+            </div>
+        </div>
+
+        <div class="accounts-grid" id="accountsGridContainer">
+            <div style="color: var(--text-secondary); padding: 20px;">Loading accounts from database...</div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="toolbar">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="txSearchInput" class="search-input" placeholder="Search merchant, narration, or reference..." oninput="debounceSearch()">
+            </div>
+            <div>
+                <select id="txCategorySelect" class="form-control" style="width: auto; padding: 7px 12px; font-size: 13px;" onchange="loadFilteredTransactions()">
+                    <option value="">All Categories</option>
+                    <option value="FOOD_DINING">Food & Dining</option>
+                    <option value="TRAVEL_COMMUTE">Travel & Commute</option>
+                    <option value="SHOPPING_ECOMMERCE">Shopping / E-Commerce</option>
+                    <option value="BNPL_LIFESTYLE">BNPL & Lifestyle</option>
+                    <option value="SUBSCRIPTIONS">Subscriptions</option>
+                    <option value="ESCROW_SPLIT">Roommate Escrow Split</option>
+                    <option value="SCHOLARSHIP_STIPEND">Stipend & Scholarship</option>
+                    <option value="FREELANCE_INCOME">Freelance Income</option>
+                    <option value="ATM_CASH_WITHDRAWAL">ATM Cash</option>
+                </select>
+            </div>
+            <div>
+                <select id="txTypeSelect" class="form-control" style="width: auto; padding: 7px 12px; font-size: 13px;" onchange="loadFilteredTransactions()">
+                    <option value="">All Types (Debit & Credit)</option>
+                    <option value="DEBIT">Debit Only (-)</option>
+                    <option value="CREDIT">Credit Only (+)</option>
+                </select>
+            </div>
+            <div>
+                <label class="switch-label" style="margin: 0;">
+                    <input type="checkbox" id="chkRandomOrder" onchange="loadFilteredTransactions()">
+                    <span>Random Order</span>
+                </label>
+            </div>
+            <div>
+                <button class="btn btn-secondary btn-sm" onclick="loadFilteredTransactions()">
+                    <span>Apply Filter</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Txn ID</th>
+                        <th>Payee & Narration</th>
+                        <th>Category</th>
+                        <th>Payment Mode</th>
+                        <th>Amount (INR)</th>
+                        <th>Running Balance</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionsTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                            Loading transactions...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PANE 2: LIVE STREAM PUMP -->
+    <div class="tab-pane" id="paneSimulator">
+        <div class="grid-2col">
+            <!-- Left: Simulator Controls -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-title-left">
+                            <span>⚡</span> Stream Controls
+                        </div>
+                        <span class="badge badge-safe" id="streamBadgeStatus">RUNNING</span>
+                    </div>
+
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.5;">
+                        Simulates live real-time UPI and banking activity with <strong>random delays</strong> (1.2s – 3.2s) and <strong>with repetition</strong> so data flow from the backend never stops.
+                    </p>
+
+                    <div class="form-group">
+                        <label class="form-label">Min Delay (Milliseconds)</label>
+                        <input type="number" id="streamMinDelay" class="form-control" value="1000" min="500" max="10000" step="100">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Max Delay (Milliseconds)</label>
+                        <input type="number" id="streamMaxDelay" class="form-control" value="3000" min="600" max="15000" step="100">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                        <button class="btn btn-primary" style="flex: 1;" id="btnStartStream" onclick="updateStreamSettings(true)">
+                            <span>▶️</span> Start / Update Stream
+                        </button>
+                        <button class="btn btn-danger" id="btnStopStream" onclick="stopStream()">
+                            <span>⏹️</span> Stop
+                        </button>
+                    </div>
+
+                    <button class="btn btn-secondary" style="width: 100%; margin-bottom: 18px;" onclick="injectInstantTxn()">
+                        <span>⚡</span> Inject Instant Simulated Txn
+                    </button>
+
+                    <div class="calc-result-box" style="margin-top: 0;">
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">Total Streamed Count</span>
+                            <span class="calc-stat-val highlight" id="statStreamCount">0</span>
+                        </div>
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">Last Random Delay</span>
+                            <span class="calc-stat-val" id="statLastDelay">0 ms</span>
+                        </div>
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">SSE Status</span>
+                            <span class="calc-stat-val" id="statSseStatus" style="color: #34d399;">CONNECTED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Real-time Live Ticker Feed -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-title-left">
+                            <span>📡</span> Live Real-time Feed (SSE & Background Stream)
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="clearLiveFeed()">Clear Feed</button>
+                    </div>
+
+                    <div class="live-ticker-wrap" id="liveTickerContainer">
+                        <div style="color: var(--text-muted); text-align: center; padding: 40px;">
+                            Waiting for incoming live transactions...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE 3: AA PROTOCOL SANDBOX -->
+    <div class="tab-pane" id="paneAaFlow">
+        <div class="grid-2col">
+            <!-- Left: Stepped Lifecycle Flow -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-title-left">
+                            <span>🏛️</span> ReBIT AA Lifecycle
+                        </div>
+                    </div>
+
+                    <div class="step-timeline">
+                        <div class="step-box completed" id="boxStep1">
+                            <div class="step-num-badge">1</div>
+                            <div class="step-details">
+                                <h4>Consent Request</h4>
+                                <p>Initiates ReBIT consent request with student VPA identifier.</p>
+                                <code>POST /api/v1/aa/consents</code>
+                            </div>
+                        </div>
+
+                        <div class="step-box completed" id="boxStep2">
+                            <div class="step-num-badge">2</div>
+                            <div class="step-details">
+                                <h4>OTP Verification & Digital Signature</h4>
+                                <p>Simulates student entering 6-digit OTP <code>123456</code> to grant consent.</p>
+                                <code>POST /api/v1/aa/consents/{id}/approve</code>
+                            </div>
+                        </div>
+
+                        <div class="step-box completed" id="boxStep3">
+                            <div class="step-num-badge">3</div>
+                            <div class="step-details">
+                                <h4>Key Exchange & FI Session</h4>
+                                <p>ECDH curve25519 session initiated with bank FIP.</p>
+                                <code>POST /api/v1/aa/fi/request</code>
+                            </div>
+                        </div>
+
+                        <div class="step-box completed" id="boxStep4">
+                            <div class="step-num-badge">4</div>
+                            <div class="step-details">
+                                <h4>Encrypted Statement Fetch</h4>
+                                <p>Downloads encrypted payload and decrypts ReBIT multi-account dataset.</p>
+                                <code>GET /api/v1/aa/fi/fetch/{sessionId}</code>
+                            </div>
+                        </div>
+
+                        <div class="step-box completed" id="boxStep5">
+                            <div class="step-num-badge">5</div>
+                            <div class="step-details">
+                                <h4>FIU Normalization & Persistence</h4>
+                                <p>Ingests accounts & categorizes transactions into Ledgr database.</p>
+                                <code>POST /api/v1/fiu/sync</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Customer VPA Handle</label>
+                        <input type="text" id="inputCustomerVpa" class="form-control" value="student@setuaa">
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1;" id="btnRunSyncFull" onclick="runFullAaSync()">
+                            <span>⚡</span> Execute Full AA Handshake
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="revokeCurrentConsent()">
+                            Revoke
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive AA Terminal Log & Session Details -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <div class="card-title-left">
+                            <span>💻</span> Handshake Console Logs
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="clearTerminal()">Clear</button>
+                    </div>
+
+                    <div class="terminal-box" id="terminalLogs">
+                        <div class="log-entry info">[System] Setu Account Aggregator Gateway ready on port 8085.</div>
+                        <div class="log-entry info">[System] Zero-config H2 / Postgres database active.</div>
+                    </div>
+
+                    <div class="calc-result-box" style="margin-top: 20px;">
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">Active Consent ID</span>
+                            <span class="calc-stat-val" id="dispConsentId" style="font-size: 11px;">-</span>
+                        </div>
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">Consent Status</span>
+                            <span class="calc-stat-val" id="dispConsentStatus" style="color: #34d399;">ACTIVE</span>
+                        </div>
+                        <div class="calc-stat">
+                            <span class="calc-stat-label">FI Session ID</span>
+                            <span class="calc-stat-val" id="dispSessionId" style="font-size: 11px;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE 4: STUDENT FINTECH TOOLS -->
+    <div class="tab-pane" id="paneTools">
+        <div class="calculator-row">
+            <!-- Tool 1: Scholarship Runway Calculator -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="card-title-left">
+                        <span>🎓</span> Scholarship Runway Calculator
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+                    Projects how many months a student can sustain living expenses based on liquid bank balances and optional fixed deposit buffers.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Custom Monthly Burn Rate (₹)</label>
+                    <input type="number" id="calcBurnRateInput" class="form-control" placeholder="Leave empty for auto-calculated burn" oninput="recalcRunway()">
+                </div>
+
+                <label class="switch-label">
+                    <input type="checkbox" id="chkIncludeFdBuffer" onchange="recalcRunway()">
+                    <span>Include Fixed Deposit (FD) Buffer as Safety Reserve</span>
+                </label>
+
+                <div class="calc-result-box">
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Liquid Savings Capital</span>
+                        <span class="calc-stat-val" id="cRunwayLiquid">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">FD Buffer Assets</span>
+                        <span class="calc-stat-val" id="cRunwayFd">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Monthly Burn Rate</span>
+                        <span class="calc-stat-val" id="cRunwayBurn">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Safe Runway Months</span>
+                        <span class="calc-stat-val highlight" id="cRunwayMonths" style="font-size: 20px;">0.0 Months</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Runway Health Status</span>
+                        <span class="calc-stat-val" id="cRunwayHealth"><span class="badge badge-safe">COMFORTABLE</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 2: Post-Graduation Salary Sandbox -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="card-title-left">
+                        <span>💼</span> Post-Grad Salary Sandbox
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+                    CTC-to-in-hand salary simulator factoring in 12% EPF, FY 2024-25 New Tax Regime slabs, and city cost-of-living index.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Annual CTC Offer (₹)</label>
+                    <input type="number" id="salaryCtcInput" class="form-control" value="1200000" step="50000" oninput="recalcSalary()">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Target City of Employment</label>
+                    <select id="salaryCitySelect" class="form-control" onchange="recalcSalary()">
+                        <option value="Bangalore" selected>Bangalore (₹35k/mo baseline)</option>
+                        <option value="Mumbai">Mumbai (₹45k/mo baseline)</option>
+                        <option value="Delhi">Delhi (₹32k/mo baseline)</option>
+                        <option value="Hyderabad">Hyderabad (₹28k/mo baseline)</option>
+                        <option value="Pune">Pune (₹27k/mo baseline)</option>
+                    </select>
+                </div>
+
+                <div class="calc-result-box">
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Monthly Gross</span>
+                        <span class="calc-stat-val" id="salMonthlyGross">₹1,00,000</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">12% Annual EPF</span>
+                        <span class="calc-stat-val" id="salAnnualEpf">₹57,600</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Annual Income Tax</span>
+                        <span class="calc-stat-val" id="salAnnualTax">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Monthly Net In-Hand</span>
+                        <span class="calc-stat-val highlight" id="salMonthlyInHand">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">City Estimated Living Cost</span>
+                        <span class="calc-stat-val" id="salCityCost">₹35,000</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Projected Monthly Savings</span>
+                        <span class="calc-stat-val" id="salMonthlySavings" style="color: #34d399;">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tool 3: Roommate Escrow & Expense Splitter -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="card-title-left">
+                        <span>🍕</span> Roommate Expense Splitter
+                    </div>
+                </div>
+
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+                    Automatically detects shared roommate dining, rent, groceries, electricity, and Wi-Fi IOUs and computes equal per-person shares.
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">Total Roommates in Apartment</label>
+                    <input type="number" id="roommatesCountInput" class="form-control" value="3" min="1" max="10" oninput="recalcRoommates()">
+                </div>
+
+                <div class="calc-result-box">
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Detected Shared Expenses</span>
+                        <span class="calc-stat-val" id="splitSharedCount">0 items</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Total Shared Pool</span>
+                        <span class="calc-stat-val" id="splitTotalAmount">₹0.00</span>
+                    </div>
+                    <div class="calc-stat">
+                        <span class="calc-stat-label">Each Person's Share</span>
+                        <span class="calc-stat-val highlight" id="splitPerPerson">₹0.00</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 14px;">
+                    <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="recalcRoommates()">
+                        <span>🔄</span> Refresh Shared Ledger
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANE 5: RAW REBIT MOCK JSON -->
+    <div class="tab-pane" id="paneRaw">
+        <div class="card">
+            <div class="card-title">
+                <div class="card-title-left">
+                    <span>📜</span> Raw ReBIT Multi-Account Statement Payload
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary btn-sm" onclick="copyRawJson()">Copy JSON</button>
+                    <button class="btn btn-primary btn-sm" onclick="loadRawRebitJson()">Reload Mock Data</button>
+                </div>
+            </div>
+
+            <div class="raw-json-box" id="rawJsonContainer">Loading raw ReBIT JSON...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // System State Variables
+    let currentConsentId = null;
+    let sseEventSource = null;
+    let searchDebounceTimer = null;
+    let liveTxnCount = 0;
+
+    // Log to Handshake Console
+    function logTerminal(msg, type = 'info') {
+        const box = document.getElementById('terminalLogs');
+        if (!box) return;
+        const entry = document.createElement('div');
+        entry.className = 'log-entry ' + type;
+        const time = new Date().toLocaleTimeString();
+        entry.textContent = `[${time}] ${msg}`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function clearTerminal() {
+        const box = document.getElementById('terminalLogs');
+        if (box) box.innerHTML = '';
+    }
+
+    function clearLiveFeed() {
+        const box = document.getElementById('liveTickerContainer');
+        if (box) box.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 40px;">Feed cleared. Waiting for new live transactions...</div>';
+    }
+
+    // Switch Tab Panes
+    function switchTab(paneId) {
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+
+        const targetPane = document.getElementById(paneId);
+        if (targetPane) targetPane.classList.add('active');
+
+        if (paneId === 'paneAccounts') {
+            document.getElementById('tabBtnAccounts').classList.add('active');
+            loadAccountsAndOverview();
+            loadFilteredTransactions();
+        } else if (paneId === 'paneSimulator') {
+            document.getElementById('tabBtnSimulator').classList.add('active');
+            loadStreamStatus();
+        } else if (paneId === 'paneAaFlow') {
+            document.getElementById('tabBtnAaFlow').classList.add('active');
+        } else if (paneId === 'paneTools') {
+            document.getElementById('tabBtnTools').classList.add('active');
+            recalcRunway();
+            recalcSalary();
+            recalcRoommates();
+        } else if (paneId === 'paneRaw') {
+            document.getElementById('tabBtnRaw').classList.add('active');
+            loadRawRebitJson();
+        }
+    }
+
+    // Formatting Helper
+    function formatInr(val) {
+        const num = Number(val || 0);
+        return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 1. Load Overview Metrics & Accounts
+    async function loadAccountsAndOverview() {
+        try {
+            // Analytics
+            const aRes = await fetch('/api/v1/fiu/analytics/overview');
+            if (aRes.ok) {
+                const a = await aRes.json();
+                const liquid = Number(a.totalLiquidBalance || 0);
+                const fd = Number(a.totalFixedDepositAssets || 0);
+                const rd = Number(a.totalRecurringDepositAssets || 0);
+                const locked = fd + rd;
+                const netWorth = liquid + locked;
+                const runway = Number(a.scholarshipRunwayMonths || 0);
+                const burn = Number(a.monthlyBurnRate || 0);
+
+                document.getElementById('valLiquidBalance').textContent = formatInr(liquid);
+                document.getElementById('valLockedAssets').textContent = formatInr(locked);
+                document.getElementById('valNetWorth').textContent = formatInr(netWorth);
+                document.getElementById('valScholarshipRunway').textContent = runway.toFixed(1) + ' mo';
+                document.getElementById('burnRateText').textContent = 'Burn: ' + formatInr(burn) + '/mo';
+
+                const badge = document.getElementById('runwayBadge');
+                if (runway >= 6) {
+                    badge.className = 'badge badge-safe';
+                    badge.textContent = 'COMFORTABLE';
+                } else if (runway >= 3) {
+                    badge.className = 'badge badge-warning';
+                    badge.textContent = 'MODERATE';
+                } else {
+                    badge.className = 'badge badge-danger';
+                    badge.textContent = 'CRITICAL';
+                }
+            }
+
+            // Accounts Grid
+            const accRes = await fetch('/api/v1/fiu/accounts');
+            if (accRes.ok) {
+                const accounts = await accRes.json();
+                const grid = document.getElementById('accountsGridContainer');
+                grid.innerHTML = '';
+
+                if (!accounts || accounts.length === 0) {
+                    grid.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">No accounts synced yet. Click "One-Click Sync" above.</div>';
+                    return;
+                }
+
+                accounts.forEach(acc => {
+                    let tagClass = 'tag-savings';
+                    let tagLabel = 'Savings Account';
+                    const fiType = (acc.fiType || '').toUpperCase();
+                    const accType = (acc.accountType || '').toUpperCase();
+
+                    if (fiType.includes('TERM') || accType.includes('FIXED')) {
+                        tagClass = 'tag-fd';
+                        tagLabel = 'Fixed Deposit';
+                    } else if (fiType.includes('RECURRING') || accType.includes('RECURRING')) {
+                        tagClass = 'tag-rd';
+                        tagLabel = 'Recurring Deposit';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'account-card';
+                    card.innerHTML = `
+                        <div class="account-card-header">
+                            <span class="account-tag ${tagClass}">${tagLabel}</span>
+                            <span class="acc-num-label">${acc.accountNumber}</span>
+                        </div>
+                        <div class="acc-balance-display">${formatInr(acc.currentBalance)}</div>
+                        <div class="acc-meta-list">
+                            <div class="acc-meta-item">
+                                <span>Account Holder:</span>
+                                <strong>${acc.holderName || 'Akshay Kumar'}</strong>
+                            </div>
+                            <div class="acc-meta-item">
+                                <span>IFSC / Branch:</span>
+                                <strong>${acc.ifsc || 'ICIC0001124'} (${acc.branchName || 'Jayanagar'})</strong>
+                            </div>
+                            ${acc.interestRate ? `
+                            <div class="acc-meta-item">
+                                <span>Interest Rate:</span>
+                                <strong>${acc.interestRate}% p.a.</strong>
+                            </div>` : ''}
+                            ${acc.maturityAmount ? `
+                            <div class="acc-meta-item">
+                                <span>Maturity Amount:</span>
+                                <strong>${formatInr(acc.maturityAmount)}</strong>
+                            </div>
+                            <div class="acc-meta-item">
+                                <span>Maturity Date:</span>
+                                <strong>${acc.maturityDate || 'N/A'}</strong>
+                            </div>` : ''}
+                            <div class="acc-meta-item">
+                                <span>KYC & Nominee:</span>
+                                <strong>${acc.nomineeStatus || 'REGISTERED'} (Compliant)</strong>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        } catch (err) {
+            console.error('Error loading accounts:', err);
+        }
+    }
+
+    // 2. Load Filtered Transactions Table
+    async function loadFilteredTransactions() {
+        const search = document.getElementById('txSearchInput').value.trim();
+        const category = document.getElementById('txCategorySelect').value;
+        const txnType = document.getElementById('txTypeSelect').value;
+        const randomOrder = document.getElementById('chkRandomOrder').checked;
+
+        let url = `/api/v1/fiu/transactions?size=80&randomOrder=${randomOrder}`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (txnType) url += `&txnType=${encodeURIComponent(txnType)}`;
+
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('transactionsTableBody');
+                tbody.innerHTML = '';
+
+                const txns = data.transactions || [];
+                if (txns.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">No matching transactions found.</td></tr>';
+                    return;
+                }
+
+                txns.forEach(t => {
+                    const isDebit = (t.txnType || 'DEBIT').toUpperCase() === 'DEBIT';
+                    const tr = document.createElement('tr');
+                    const ts = (t.transactionTimestamp || '').substring(0, 19).replace('T', ' ');
+
+                    tr.innerHTML = `
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${ts}</td>
+                        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);">${t.txnId || '-'}</td>
+                        <td>
+                            <strong>${t.merchantPayee || 'Merchant'}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">${t.narration || ''}</div>
+                        </td>
+                        <td><span class="category-pill">${t.category || 'GENERAL'}</span></td>
+                        <td><span class="mode-pill">${t.paymentMode || 'UPI'}</span></td>
+                        <td class="${isDebit ? 'amount-debit' : 'amount-credit'}">
+                            ${isDebit ? '-' : '+'}${formatInr(t.amount)}
+                        </td>
+                        <td style="font-family: 'JetBrains Mono', monospace;">${formatInr(t.balanceAfterTxn)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch (err) {
+            console.error('Error loading filtered transactions:', err);
+        }
+    }
+
+    function debounceSearch() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(loadFilteredTransactions, 250);
+    }
+
+    // 3. Real-Time Stream & SSE Listener
+    function initSseStream() {
+        if (sseEventSource) {
+            sseEventSource.close();
+        }
+
+        try {
+            sseEventSource = new EventSource('/api/v1/simulator/stream/events');
+
+            sseEventSource.addEventListener('connected', (e) => {
+                logTerminal('Connected to SSE Live Transaction Stream', 'info');
+                document.getElementById('statSseStatus').textContent = 'CONNECTED';
+                document.getElementById('statSseStatus').style.color = '#34d399';
+            });
+
+            sseEventSource.addEventListener('transaction', (e) => {
+                const txn = JSON.parse(e.data);
+                handleIncomingStreamTxn(txn);
+            });
+
+            sseEventSource.onerror = () => {
+                document.getElementById('statSseStatus').textContent = 'RECONNECTING...';
+                document.getElementById('statSseStatus').style.color = '#f59e0b';
+            };
+        } catch (e) {
+            console.error('SSE initialization failed, fallback to polling:', e);
+        }
+    }
+
+    function handleIncomingStreamTxn(txn) {
+        liveTxnCount++;
+        document.getElementById('statStreamCount').textContent = liveTxnCount;
+
+        const container = document.getElementById('liveTickerContainer');
+        if (!container) return;
+
+        // Remove placeholder if present
+        if (container.children.length === 1 && container.children[0].textContent.includes('Waiting')) {
+            container.innerHTML = '';
+        }
+
+        const isDebit = (txn.txnType || 'DEBIT').toUpperCase() === 'DEBIT';
+        const card = document.createElement('div');
+        card.className = 'ticker-card new-arrival';
+
+        const ts = (txn.transactionTimestamp || '').substring(11, 19);
+
+        card.innerHTML = `
+            <div class="ticker-left">
+                <div class="ticker-icon">${isDebit ? '🛍️' : '💰'}</div>
+                <div class="ticker-meta">
+                    <h5>${txn.merchantPayee || 'Merchant'} <span class="category-pill" style="font-size: 9px;">${txn.category || 'UPI'}</span></h5>
+                    <p>${txn.narration || ''} • <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${ts}</span></p>
+                </div>
+            </div>
+            <div class="ticker-right">
+                <div class="${isDebit ? 'amount-debit' : 'amount-credit'}" style="font-size: 15px;">
+                    ${isDebit ? '-' : '+'}${formatInr(txn.amount)}
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                    Bal: ${formatInr(txn.balanceAfterTxn)}
+                </div>
+            </div>
+        `;
+
+        container.insertBefore(card, container.firstChild);
+
+        // Keep maximum 25 items in ticker
+        while (container.children.length > 25) {
+            container.removeChild(container.lastChild);
+        }
+
+        // Live update overview balance if active
+        if (txn.balanceAfterTxn && (txn.account?.accountType === 'SAVINGS' || !txn.account)) {
+            document.getElementById('valLiquidBalance').textContent = formatInr(txn.balanceAfterTxn);
+        }
+    }
+
+    // Polling fallback to keep stream status & recent transactions synced
+    async function loadStreamStatus() {
+        try {
+            const res = await fetch('/api/v1/simulator/stream/status');
+            if (res.ok) {
+                const s = await res.json();
+                const active = s.active;
+                document.getElementById('streamBadgeStatus').textContent = active ? 'RUNNING' : 'STOPPED';
+                document.getElementById('streamBadgeStatus').className = active ? 'badge badge-safe' : 'badge badge-danger';
+                document.getElementById('statLastDelay').textContent = (s.lastDelayMs || 0) + ' ms';
+                document.getElementById('streamStatusText').textContent = active 
+                    ? `Stream Active (${s.minDelayMs || 1000}ms - ${s.maxDelayMs || 3000}ms)` 
+                    : 'Stream Paused';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function updateStreamSettings(start = true) {
+        const minMs = document.getElementById('streamMinDelay').value || 1000;
+        const maxMs = document.getElementById('streamMaxDelay').value || 3000;
+
+        try {
+            const res = await fetch(`/api/v1/simulator/stream/start?minDelayMs=${minMs}&maxDelayMs=${maxMs}`, { method: 'POST' });
+            if (res.ok) {
+                logTerminal(`Live stream started with random delays between ${minMs}ms and ${maxMs}ms`, 'success');
+                loadStreamStatus();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function stopStream() {
+        try {
+            const res = await fetch('/api/v1/simulator/stream/stop', { method: 'POST' });
+            if (res.ok) {
+                logTerminal('Live transaction stream stopped', 'warn');
+                loadStreamStatus();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function injectInstantTxn() {
+        try {
+            const res = await fetch('/api/v1/simulator/transactions/generate', { method: 'POST' });
+            if (res.ok) {
+                const data = await res.json();
+                logTerminal(`Instant simulated txn generated: ${data.transaction?.merchantPayee} (${formatInr(data.transaction?.amount)})`, 'success');
+                handleIncomingStreamTxn(data.transaction);
+                loadAccountsAndOverview();
+            }
+        } catch (e) {
+            console.error('Error generating instant transaction:', e);
+        }
+    }
+
+    // 4. One-Click AA Lifecycle Sync
+    async function runFullAaSync() {
+        const btn1 = document.getElementById('btnQuickSync');
+        const btn2 = document.getElementById('btnRunSyncFull');
+        if (btn1) btn1.disabled = true;
+        if (btn2) btn2.disabled = true;
+
+        const vpa = document.getElementById('inputCustomerVpa')?.value || 'student@setuaa';
+
+        logTerminal(`Starting complete ReBIT AA handshake for ${vpa}...`, 'info');
+
+        try {
+            const res = await fetch(`/api/v1/fiu/sync?customerVpa=${encodeURIComponent(vpa)}`, { method: 'POST' });
+            const data = await res.json();
+
+            if (data.status === 'SUCCESS') {
+                currentConsentId = data.consentId;
+                document.getElementById('dispConsentId').textContent = data.consentId ? data.consentId.substring(0, 16) + '...' : '-';
+                document.getElementById('dispSessionId').textContent = data.sessionId ? data.sessionId.substring(0, 16) + '...' : '-';
+                document.getElementById('dispConsentStatus').textContent = 'ACTIVE';
+
+                logTerminal(`✅ Consent ${data.consentId?.substring(0, 8)} created & verified with OTP`, 'success');
+                logTerminal(`✅ ECDH key-exchange established session: ${data.sessionId?.substring(0, 8)}`, 'success');
+                logTerminal(`✅ Decrypted & ingested ${data.accountsSynchronized} accounts and ${data.transactionsSynchronized} transactions!`, 'success');
+
+                await loadAccountsAndOverview();
+                await loadFilteredTransactions();
+            } else {
+                logTerminal('AA sync notice: ' + JSON.stringify(data), 'warn');
+            }
+        } catch (err) {
+            logTerminal('Error executing AA sync: ' + err.message, 'warn');
+        } finally {
+            if (btn1) btn1.disabled = false;
+            if (btn2) btn2.disabled = false;
+        }
+    }
+
+    async function revokeCurrentConsent() {
+        if (!currentConsentId) {
+            logTerminal('No active consent session to revoke. Run sync first.', 'warn');
+            return;
+        }
+        try {
+            const res = await fetch(`/api/v1/aa/consents/${currentConsentId}/revoke`, { method: 'POST' });
+            if (res.ok) {
+                logTerminal(`Consent ${currentConsentId.substring(0, 8)} revoked successfully.`, 'warn');
+                document.getElementById('dispConsentStatus').textContent = 'REVOKED';
+                document.getElementById('dispConsentStatus').style.color = '#fb7185';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // 5. FinTech Tools Calculators
+    async function recalcRunway() {
+        const burnInput = document.getElementById('calcBurnRateInput').value;
+        const includeFd = document.getElementById('chkIncludeFdBuffer').checked;
+
+        let url = `/api/v1/tools/runway?includeFdBuffer=${includeFd}`;
+        if (burnInput && Number(burnInput) > 0) {
+            url += `&customMonthlyBurn=${burnInput}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                const d = await res.json();
+                document.getElementById('cRunwayLiquid').textContent = formatInr(d.liquidSavings);
+                document.getElementById('cRunwayFd').textContent = formatInr(d.fdBufferAssets);
+                document.getElementById('cRunwayBurn').textContent = formatInr(d.monthlyBurnRate);
+                document.getElementById('cRunwayMonths').textContent = (d.runwayMonths || 0) + ' Months';
+
+                const statusEl = document.getElementById('cRunwayHealth');
+                const st = d.safetyStatus || 'COMFORTABLE';
+                if (st === 'COMFORTABLE') {
+                    statusEl.innerHTML = '<span class="badge badge-safe">COMFORTABLE (Safe)</span>';
+                } else if (st === 'MODERATE') {
+                    statusEl.innerHTML = '<span class="badge badge-warning">MODERATE (Watchful)</span>';
+                } else {
+                    statusEl.innerHTML = '<span class="badge badge-danger">CRITICAL (Budget Alert)</span>';
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function recalcSalary() {
+        const ctc = document.getElementById('salaryCtcInput').value || 1200000;
+        const city = document.getElementById('salaryCitySelect').value || 'Bangalore';
+
+        try {
+            const res = await fetch(`/api/v1/tools/salary-sandbox?ctc=${ctc}&city=${encodeURIComponent(city)}`);
+            if (res.ok) {
+                const s = await res.json();
+                document.getElementById('salMonthlyGross').textContent = formatInr(s.monthlyGross);
+                document.getElementById('salAnnualEpf').textContent = formatInr(s.annualEpfDeduction);
+                document.getElementById('salAnnualTax').textContent = formatInr(s.annualIncomeTax);
+                document.getElementById('salMonthlyInHand').textContent = formatInr(s.monthlyNetInHand);
+                document.getElementById('salCityCost').textContent = formatInr(s.estimatedCityMonthlyLivingCost);
+                document.getElementById('salMonthlySavings').textContent = formatInr(s.projectedMonthlySavings);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function recalcRoommates() {
+        const count = document.getElementById('roommatesCountInput').value || 3;
+
+        try {
+            const res = await fetch(`/api/v1/tools/roommate-splits?totalRoommates=${count}`);
+            if (res.ok) {
+                const r = await res.json();
+                document.getElementById('splitSharedCount').textContent = (r.sharedTransactionsCount || 0) + ' shared transactions';
+                document.getElementById('splitTotalAmount').textContent = formatInr(r.totalSharedExpenditure);
+                document.getElementById('splitPerPerson').textContent = formatInr(r.perPersonShare) + ' each';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // 6. Raw JSON
+    async function loadRawRebitJson() {
+        const box = document.getElementById('rawJsonContainer');
+        box.textContent = 'Fetching raw ReBIT mock dataset...';
+        try {
+            const res = await fetch('/api/v1/aa/mock/raw');
+            if (res.ok) {
+                const data = await res.json();
+                box.textContent = JSON.stringify(data, null, 2);
+            }
+        } catch (e) {
+            box.textContent = 'Error loading raw JSON: ' + e.message;
+        }
+    }
+
+    function copyRawJson() {
+        const box = document.getElementById('rawJsonContainer');
+        navigator.clipboard.writeText(box.textContent).then(() => {
+            alert('ReBIT JSON copied to clipboard!');
+        });
+    }
+
+    // Initial Load on Page Startup
+    window.addEventListener('DOMContentLoaded', async () => {
+        logTerminal('Initializing Ledgr Web Application...', 'info');
+        await loadAccountsAndOverview();
+        await loadFilteredTransactions();
+        initSseStream();
+
+        // Polling fallback every 3 seconds for continuous metrics update
+        setInterval(() => {
+            loadStreamStatus();
+        }, 3000);
+    });
+</script>
+
+</body>
+</html>
