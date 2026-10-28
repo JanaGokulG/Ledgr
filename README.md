@@ -1,128 +1,350 @@
-# Ledgr Backend Web Application 🛡️💸
-### *RBI Account Aggregator (AA) & Student FinTech OS REST API Engine*
+# Ledgr 🛡️💸
+### *RBI Account Aggregator (AA) & Student FinTech Desktop Platform*
 
 ![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)
+![JavaFX](https://img.shields.io/badge/JavaFX-21-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-informational.svg)
 ![H2 Database](https://img.shields.io/badge/H2-In--Memory%20Fallback-blue.svg)
 ![RBI AA Framework](https://img.shields.io/badge/RBI%20AA-ReBIT%20Standard-purple.svg)
 
-**Ledgr** is a high-performance backend REST web application engineered for student personal financial planning operating under the **Reserve Bank of India (RBI) Account Aggregator (AA)** framework. It features stepped cryptographic AA handshake emulation, ReBIT financial data ingestion, real-time live transaction streaming, scholarship runway forecasting, and graduate salary tax simulation.
+**Ledgr** is a secure, native **JavaFX desktop fintech application** and **Spring Boot REST API engine** engineered for student personal financial planning. Operating under the **Reserve Bank of India (RBI) Account Aggregator (AA)** framework, Ledgr streams encrypted, standardized financial data directly from bank accounts into a local database, eliminating privacy risks through local statement processing.
 
-The desktop frontend has been entirely removed, transforming Ledgr into a headless, cloud-ready REST API service.
-
----
-
-## 🚀 Key Features & Capabilities
-
-- **🏛️ RBI Account Aggregator (AA) Gateway Sandbox (`/api/v1/aa`)**:
-  - Full ReBIT-standard lifecycle: Consent negotiation $\rightarrow$ OTP approval $\rightarrow$ Key exchange session $\rightarrow$ Decrypted payload delivery.
-  - Multi-account support: Savings Accounts, Term Deposits (FD), and Recurring Deposits (RD).
-- **📥 FIU Ingestion & Data Management (`/api/v1/fiu`)**:
-  - One-click end-to-end sync (`POST /api/v1/fiu/sync`).
-  - Searchable, filterable transactions by merchant, category, type, and pagination.
-  - Comprehensive financial overview: net worth, monthly burn rate, scholarship runway, and category expense breakdown.
-- **⚡ Real-Time Live Transaction Pump (`/api/v1/simulator`)**:
-  - Instant simulated transaction injection (`POST /api/v1/simulator/transactions/generate`).
-  - Continuous background streaming (`POST /api/v1/simulator/stream/start?intervalSeconds=3`).
-  - Server-Sent Events (SSE) live stream feed (`GET /api/v1/simulator/stream/events`).
-- **🎓 Student FinTech Calculators (`/api/v1/tools`)**:
-  - **Scholarship Runway Calculator**: Projects safe burn runway (in months) with customizable burn rates and FD buffer inclusions.
-  - **Post-Graduation Salary Sandbox**: In-hand salary simulator factoring New Tax Regime slabs, 12% EPF, and city cost-of-living indices (Bangalore, Mumbai, Delhi, Hyderabad, Pune).
-  - **Roommate Escrow & Expense Splitter**: Identifies shared dining, rent, groceries, and Wi-Fi IOUs and computes equal shares.
-  - **Auto-Renewal Early Warnings & Minimum Balance Shield**: Scans upcoming subscriptions and Recurring Deposit (RD) auto-debits, calculating days remaining and warning if the payment will bounce or breach the minimum balance threshold.
+The user interface is built with an authentic, professional dark fintech design system (no HTML/browser dependencies, no generic AI styling), featuring live balance streaming, bank non-maintenance protection, proactive auto-renewal early warnings, scholarship runway modeling, and post-graduation salary simulation.
 
 ---
 
-## 🛠️ Technology Stack
-
-| Layer | Technology |
-| :--- | :--- |
-| **Language** | Java 21+ / OpenJDK |
-| **Framework** | Spring Boot 3.3.4 (REST Web Application & Embedded Tomcat on Port 8085) |
-| **Data Persistence** | Spring Data JPA + Hibernate 6 + PostgreSQL (with automatic zero-config H2 fallback) |
-| **JSON Serialization** | Jackson Data Processor (JSR310 Datatype) with lenient ReBIT aliasing |
-| **Monitoring** | Spring Boot Actuator (`/actuator/health`) |
-| **Build Tool** | Apache Maven Wrapper (`mvnw.cmd` / `mvn`) |
-
----
-
-## 🏁 Getting Started & Running the Backend
-
-### 1. Prerequisites
-- **Java 21 LTS** or higher (verify with `java -version`)
-- **Maven 3.9+** (optional; the repository includes `mvnw.cmd` / `mvnw`)
-- **PostgreSQL** (optional; the backend automatically falls back to an in-memory H2 database with PostgreSQL compatibility mode if Postgres is not reachable)
+## 📑 Table of Contents
+1. [Prerequisites & System Requirements](#-prerequisites--system-requirements)
+2. [Detailed Steps to Run](#-detailed-steps-to-run)
+3. [Comprehensive Feature Guide & Explanations](#-comprehensive-feature-guide--explanations)
+   - [Feature 1: Accounts & Net Worth Overview](#1-accounts--net-worth-overview)
+   - [Feature 2: Live Ledger & Transaction Feed](#2-live-ledger--transaction-feed)
+   - [Feature 3: Auto-Renewal Early Warnings](#3-auto-renewal-early-warnings-distinct-feature)
+   - [Feature 4: Minimum Balance Shield](#4-minimum-balance-shield-distinct-feature)
+   - [Feature 5: Scholarship Runway & CTC Salary Sandbox](#5-scholarship-runway--ctc-salary-sandbox)
+   - [Feature 6: RBI AA Gateway & Real-Time Simulator](#6-rbi-aa-gateway--real-time-simulator)
+   - [Feature 7: Global Privacy Hotkey Shield (Ctrl+Shift+H)](#7-global-privacy-hotkey-shield-ctrlshifth)
+4. [Where Does the Data Come From? (Data Provenance & Storage)](#-where-does-the-data-come-from-data-provenance--storage)
+5. [REST API Directory & Quick-Start](#-rest-api-directory--quick-start)
+6. [Automated Test Suite](#-automated-test-suite)
+7. [Troubleshooting & FAQ](#-troubleshooting--faq)
 
 ---
 
-### 2. Environment Configuration (`.env`)
-Create a `.env` file in the root directory (or copy from [`.env.example`](file:///d:/college%20related/SEM5/Laboratory%20courses/Java%20lab/.env.example)):
+## 💻 Prerequisites & System Requirements
+
+Before running Ledgr, ensure you have the following installed:
+
+- **Java Development Kit (JDK) 21 LTS** or higher (Oracle JDK or Eclipse Temurin OpenJDK 21).
+  Verify with:
+  ```bash
+  java -version
+  ```
+- **Operating System**: Windows 10/11, macOS, or Linux.
+- **Maven 3.9+** (Optional — the repository includes the pre-configured Apache Maven Wrapper `mvnw.cmd` and `./mvnw`).
+- **PostgreSQL** (Optional — Ledgr automatically falls back to an embedded in-memory H2 database running in PostgreSQL compatibility mode if no local PostgreSQL server is active).
+
+---
+
+## 🚀 Detailed Steps to Run
+
+### Step 1: Clone and Navigate to the Repository
+```powershell
+cd "d:\college related\SEM5\Laboratory courses\Java lab"
+```
+
+### Step 2: Configure Environment Variables (Optional)
+Ledgr comes pre-configured with zero-friction defaults. If you wish to customize database credentials or Plaid sandbox keys, configure a `.env` file in the root folder (or reference [`.env.example`](file:///.env.example)):
 
 ```env
-# Server
+# Server Port (Spring Boot REST Engine)
 SERVER_PORT=8085
 
-# Database Configuration (Defaults to local PostgreSQL with H2 fallback)
+# Database Configuration (Defaults to local PostgreSQL with automatic H2 fallback)
 DB_URL=jdbc:postgresql://localhost:5432/ledgr_db
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 
-# Banking Sandbox API (Plaid) Credentials
-BANKING_API_CLIENT_ID=your_plaid_client_id
-BANKING_API_SECRET=your_plaid_sandbox_secret
+# Banking Sandbox Credentials (Optional / Pre-configured for offline sandbox)
 BANKING_API_ENV=sandbox
-BANKING_API_BASE_URL=https://sandbox.plaid.com
-BANKING_INSTITUTION_ID=ins_20
-BANKING_WEBHOOK_URL=https://www.genericwebhookurl.com/webhook
-BANKING_OVERRIDE_USERNAME=user_good
-BANKING_OVERRIDE_PASSWORD=pass_good
 TRANSACTION_DELAY_MS=150
 ```
 
 > [!NOTE]
-> Environment variables in `.env` are automatically loaded into Spring Boot properties via [`DotenvLoader`](file:///d:/college%20related/SEM5/Laboratory%20courses/Java%20lab/src/main/java/com/ledgr/config/DotenvLoader.java) upon startup.
+> The application uses [`DotenvLoader`](file:///src/main/java/com/ledgr/config/DotenvLoader.java) to load `.env` variables automatically on boot.
 
 ---
 
-### 3. Build & Run the Application
+### Step 3: Launch the Application
 
-#### Option A: Using the Maven Wrapper (Recommended)
-From the project root directory:
+#### Option A: Run JavaFX Desktop Client (Recommended)
+This runs the full native JavaFX desktop application alongside the Spring Boot backend service:
 
-**Windows (PowerShell / Command Prompt):**
+**Windows (PowerShell or Command Prompt):**
+```powershell
+.\mvnw.cmd javafx:run
+```
+
+**Linux / macOS:**
+```bash
+./mvnw javafx:run
+```
+
+#### Option B: Run via Spring Boot Plugin
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-**Linux / macOS / Git Bash:**
-```bash
-./mvnw spring-boot:run
-```
-
-#### Option B: Using Installed Maven
-```bash
-mvn spring-boot:run
-```
-
-#### Option C: Build Executable JAR and Run
+#### Option C: Build a Standalone Packaged JAR
+To compile and package the application into a single executable JAR:
 ```powershell
-# Build packaged JAR
+# 1. Compile and package (skipping test execution for faster build)
 .\mvnw.cmd clean package -DskipTests
 
-# Run JAR
+# 2. Run the packaged JAR
 java -jar target/ledgr-backend-1.0.0-SNAPSHOT.jar
 ```
 
-The web server will boot on port **`8085`**:
-- **Interactive Web Dashboard**: [http://localhost:8085](http://localhost:8085)
-- **API Overview & Directory**: [http://localhost:8085/api/v1](http://localhost:8085/api/v1)
-- **Health Check**: [http://localhost:8085/api/v1/health](http://localhost:8085/api/v1/health) or [http://localhost:8085/actuator/health](http://localhost:8085/actuator/health)
+#### Option D: Run Headless (REST API Only, without GUI)
+If running on a remote Linux server or Docker container without a display:
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.main.headless=true"
+```
 
 ---
 
-### 4. Running Automated Tests
-Run integration tests (including Plaid banking sandbox tests and entity persistence):
+## 🌟 Comprehensive Feature Guide & Explanations
+
+Ledgr is structured into distinct, modular financial intelligence and protection tools designed specifically for college students:
+
+```
+┌───────────────────────────────────────────────────────────────────────────┐
+│                                 LEDGR                                     │
+├────────────────────┬──────────────────────────────────────────────────────┤
+│ FINANCIAL HUB      │ 1. Accounts & Net Worth (Multi-Account Overview)     │
+│                    │ 2. Live Ledger & Transactions (Categorized Feed)     │
+├────────────────────┼──────────────────────────────────────────────────────┤
+│ BANKING PROTECTION │ 3. Auto-Renewal Early Warnings (7-Day Buffer Alerts) │
+│                    │ 4. Minimum Balance Shield (MAB Breach Protection)    │
+├────────────────────┼──────────────────────────────────────────────────────┤
+│ PLANNING & TOOLS   │ 5. Scholarship Runway & Post-Grad CTC Sandbox        │
+│                    │ 6. AA Gateway & Real-Time Transaction Simulator      │
+├────────────────────┼──────────────────────────────────────────────────────┤
+│ GLOBAL SECURITY    │ 7. Global Privacy Hotkey Shield (Ctrl + Shift + H)   │
+└────────────────────┴──────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1. Accounts & Net Worth Overview
+
+- **What it does**:
+  Provides an aggregated summary of all assets held by the student across multiple linked accounts.
+  - **Total Net Worth**: The exact mathematical sum of spendable savings, fixed deposits, and recurring deposits:
+    $$\text{Net Worth} = \text{Liquid Savings} + \text{Fixed Deposit Buffer} + \text{Recurring Deposits}$$
+  - **Liquid Savings**: Cumulative balance of all active checking/savings accounts available for immediate UPI transfers.
+  - **Fixed Deposit Buffer**: Safe, locked emergency capital yielding guaranteed interest (e.g. 7.1% p.a.).
+  - **Recurring Deposits (RD)**: Monthly compounding student savings deposits.
+  - **Linked Account Cards**: Detailed cards showing masked account numbers, branch IFSC, holder name, nominee status, interest rates, and CKYC validation status.
+- **Why students need it**:
+  College students frequently juggle multiple bank accounts (e.g., student zero-balance accounts, scholarship disbursement accounts, and family savings accounts). This view centralizes total liquidity in one verified dashboard.
+- **Where the data is from**:
+  - **Source**: Directly queried from the `bank_accounts` database table ([`AccountEntity`](file:///src/main/java/com/ledgr/entity/AccountEntity.java)) via [`AccountRepository`](file:///src/main/java/com/ledgr/repository/AccountRepository.java).
+  - **Seeding / Sync**: Initially ingested via the RBI Account Aggregator sandbox (`student@setuaa`) during initialization or refreshed on demand.
+
+---
+
+### 2. Live Ledger & Transaction Feed
+
+- **What it does**:
+  - Displays a chronological, searchable, and filterable ledger of all financial inflows and debits.
+  - Each transaction displays timestamp, narration, merchant/payee tag, category (e.g., `FOOD_DINING`, `SUBSCRIPTIONS`, `TRAVEL_COMMUTE`, `ESCROW_SPLIT`), payment mode (`UPI`, `CARD`, `FT`, `ATM`), credit/debit badge, transaction amount, and the running account balance after transaction execution.
+  - Includes a real-time search bar that filters merchants, categories, and narrations as you type, along with transaction type filters.
+- **Why students need it**:
+  Micro-transactions via UPI (chai, canteen, campus printing, auto rides) drain student budgets without visibility. The live ledger categorizes every rupee and displays running balance changes.
+- **Where the data is from**:
+  - **Source**: Queried directly from the `bank_transactions` database table ([`TransactionEntity`](file:///src/main/java/com/ledgr/entity/TransactionEntity.java)) via [`TransactionRepository`](file:///src/main/java/com/ledgr/repository/TransactionRepository.java).
+  - **Updates**: Continuously generated and updated in real-time by the background [`RealtimeTransactionSimulatorService`](file:///src/main/java/com/ledgr/sandbox/service/RealtimeTransactionSimulatorService.java).
+
+---
+
+### 3. Auto-Renewal Early Warnings (Distinct Feature)
+
+- **What it does**:
+  - Continuously monitors active recurring mandates, UPI AutoPay, and NACH e-mandates (e.g., Netflix Student, Spotify Premium, Campus Wi-Fi & Maintenance, Simpl BNPL tab, Gym Membership, RD Installments, Term Health Insurance, and GitHub Copilot).
+  - **7-Day Advance Notice**: Specifically filters and flags every recurring commitment scheduled to debit within the next **7 days**.
+  - **Warning Headline**: Compares the sum of imminent renewals against the funding account's liquid balance. If the balance is insufficient, it displays an urgent critical warning indicating the exact deficit amount required before debit dates to prevent bank bounce charges (₹250–₹500 penalty per bounce) and protect credit scores.
+- **Why students need it**:
+  Subscriptions and BNPL bills renew silently. When auto-debits bounce on an empty student account, banks penalize the account with heavy non-maintenance and ECS bounce charges.
+- **Where the data is from**:
+  - **Source**: Queried from the dedicated `recurring_renewals` database table ([`RecurringRenewalEntity`](file:///src/main/java/com/ledgr/entity/RecurringRenewalEntity.java)) via [`RecurringRenewalRepository`](file:///src/main/java/com/ledgr/repository/RecurringRenewalRepository.java) using `findByActiveTrueOrderByDueDateAsc()`.
+
+---
+
+### 4. Minimum Balance Shield (Distinct Feature)
+
+- **What it does**:
+  - Dedicated bank account protection engine that enforces compliance with the bank's **Minimum Average Balance (MAB)** requirement (configurable: ₹500, ₹1,000, ₹2,500, or ₹5,000).
+  - **Chronological Deduction Trajectory**: Projects the exact step-by-step running balance as upcoming recurring debits execute over the next 7 and 30 days.
+  - **Breach Detection**: Flags any future transaction that causes the balance to breach the minimum threshold or drop into negative overdraft.
+  - **Safety Top-Up Calculator**: Calculates the exact recommended deposit amount to maintain the minimum balance and avoid bank non-maintenance fees.
+  - **Simulation Bar**: Allows students to test custom balance scenarios (e.g., *"What happens if my balance drops to ₹1,200?"*) without altering real database records.
+- **Why students need it**:
+  Most Indian private and public banks levy quarterly non-maintenance fees if the balance dips below the MAB threshold. This shield prevents fees before debits occur.
+- **Where the data is from**:
+  - **Source**: Dynamically computed by [`FintechToolsController.getMinBalanceShield(...)`](file:///src/main/java/com/ledgr/sandbox/controller/FintechToolsController.java) by evaluating real balances in `bank_accounts` against active commitments in `recurring_renewals`.
+
+---
+
+### 5. Scholarship Runway & CTC Salary Sandbox
+
+#### A. Scholarship & Liquidity Runway Calculator
+- **What it does**:
+  Calculates how many months the student can survive without additional income based on current liquid savings and their monthly burn rate:
+  $$\text{Runway (Months)} = \frac{\text{Liquid Savings} + (\text{FD Buffer if toggled})}{\text{Monthly Burn Rate}}$$
+  - Computes initial burn rate automatically from the student's actual average debit history in the database (`transactionRepository.getTotalDebits() / 6`).
+  - Includes a checkbox toggle to factor in Fixed Deposit emergency reserves.
+  - Classifies safety status: `COMFORTABLE` ($\ge 6\text{ months}$), `MODERATE` ($3\text{--}6\text{ months}$), or `CRITICAL` ($< 3\text{ months}$).
+
+#### B. Post-Graduation Salary Sandbox (New Tax Regime FY 2024-25)
+- **What it does**:
+  Simulates in-hand take-home pay from campus placement offer letters:
+  - Takes Annual Cost to Company (CTC) (e.g. ₹12,00,000) and target placement city.
+  - Applies Indian statutory New Tax Regime tax slabs, ₹75,000 standard deduction, and 12% Employee Provident Fund (EPF).
+  - Deducts estimated city living cost indices (Bangalore: ₹35,000/mo, Mumbai: ₹45,000/mo, Delhi: ₹32,000/mo, Hyderabad: ₹28,000/mo, Pune: ₹27,000/mo).
+  - Outputs: Monthly Gross, Monthly Net In-Hand, Annual Tax, and Projected Monthly Savings.
+- **Where the data is from**:
+  - Runway is calculated from live `bank_accounts` and `bank_transactions` database records.
+  - Salary sandbox is calculated using statutory Indian Union Budget 2024 tax rules and verified city living cost metrics.
+
+---
+
+### 6. RBI AA Gateway & Real-Time Simulator
+
+- **What it does**:
+  - **AA 5-Phase Cryptographic Handshake**: Simulates complete end-to-end RBI Account Aggregator protocol flows:
+    1. Consent Negotiation (defines FI Types, data frequency, date ranges).
+    2. User Consent Approval & OTP Verification.
+    3. FIP Banking Key-Exchange & Session Initiation.
+    4. Encrypted JSON Data Retrieval.
+    5. Local FIU Decryption and Database Ingestion.
+  - **Real-Time Transaction Stream**: A background engine generating realistic student transactions (Swiggy, Zomato, Blinkit, Ola, BookMyShow, DRDO stipend, freelance payments) with random delays between 1.2s and 3.2s.
+  - Features pause/resume stream controls and an instant "Inject 1 Mock Transaction" button.
+- **Where the data is from**:
+  - Ingestion transforms ReBIT Account Aggregator standardized JSON payloads into `AccountEntity` and `TransactionEntity` database rows.
+  - Simulated transactions update account balances in `bank_accounts` and append to `bank_transactions`.
+
+---
+
+### 7. Global Privacy Hotkey Shield (`Ctrl + Shift + H`)
+
+- **What it does**:
+  - Instantly obfuscates all financial metrics, account balances, and transaction amounts across the entire application, replacing numbers with `₹ ••••••`.
+  - Can be activated/deactivated at any time using the global shortcut **`Ctrl + Shift + H`** or by clicking the Privacy button in the header.
+- **Why students need it**:
+  Allows students to manage finances in public libraries, classrooms, or hostel rooms without exposing balances to shoulder-surfing.
+- **Where the data is from**:
+  - Client-side reactive JavaFX state (`SimpleBooleanProperty`) that intercepts value formatters.
+
+---
+
+## 🗄️ Where Does the Data Come From? (Data Provenance & Storage)
+
+All data in Ledgr is persisted in relational database tables. No figures are hardcoded in memory or UI templates.
+
+```
+                    ┌────────────────────────────────────────┐
+                    │    DATA SOURCES & EXTERNAL SCHEMAS     │
+                    └───────────────────┬────────────────────┘
+                                        │
+           ┌────────────────────────────┴────────────────────────────┐
+           ▼                                                         ▼
+┌──────────────────────────────┐                          ┌──────────────────────┐
+│  RBI Account Aggregator      │                          │ Realtime Transaction │
+│  Sandbox (ReBIT Standard)    │                          │ Simulator Engine     │
+│  • Account Profiles          │                          │ • UPI & Canteen Txns │
+│  • Term & Recurring Deposits │                          │ • Parent Top-ups     │
+└──────────────┬───────────────┘                          └──────────┬───────────┘
+               │                                                     │
+               └──────────────────────┬──────────────────────────────┘
+                                      │ Ingestion & JPA Persistence
+                                      ▼
+             ┌──────────────────────────────────────────────────┐
+             │       LOCAL RELATIONAL DATABASE ENGINE           │
+             │       (PostgreSQL / Zero-Config H2 Fallback)     │
+             ├──────────────────────────────────────────────────┤
+             │ • bank_accounts        (AccountEntity)           │
+             │ • bank_transactions    (TransactionEntity)       │
+             │ • recurring_renewals   (RecurringRenewalEntity)  │
+             │ • aa_consents          (ConsentEntity)           │
+             │ • aa_fi_sessions       (FiSessionEntity)         │
+             └────────────────────────┬─────────────────────────┘
+                                      │
+               ┌──────────────────────┴─────────────────────────┐
+               │ Spring Data JPA Repositories & REST Services   │
+               └──────────────────────┬─────────────────────────┘
+                                      │
+                                      ▼
+               ┌────────────────────────────────────────────────┐
+               │   Native JavaFX Desktop UI (Dark Theme)        │
+               │   • Accounts & Net Worth Overview              │
+               │   • Live Ledger Table                          │
+               │   • Auto-Renewal Early Warnings Banner         │
+               │   • Minimum Balance Shield Trajectory          │
+               │   • Scholarship Runway & CTC Sandbox           │
+               └────────────────────────────────────────────────┘
+```
+
+### Database Tables & Entities:
+1. **`bank_accounts`** ([`AccountEntity`](file:///src/main/java/com/ledgr/entity/AccountEntity.java)):
+   Stores account number, branch IFSC, holder details, PAN, CKYC compliance, currency, account type (`SAVINGS`, `FIXED`, `RECURRING`), interest rate, maturity amount, and current balance.
+2. **`bank_transactions`** ([`TransactionEntity`](file:///src/main/java/com/ledgr/entity/TransactionEntity.java)):
+   Stores transaction reference ID, narration, payee, category, payment mode (`UPI`, `CARD`, `FT`, `ATM`), debit/credit type, amount, and the post-transaction balance.
+3. **`recurring_renewals`** ([`RecurringRenewalEntity`](file:///src/main/java/com/ledgr/entity/RecurringRenewalEntity.java)):
+   Stores subscription name, category, monthly amount, due date, funding account number, mandate type (`UPI_AUTOPAY`, `NACH_E_MANDATE`, etc.), and compliance advisory notes.
+4. **`aa_consents` & `aa_fi_sessions`** ([`ConsentEntity`](file:///src/main/java/com/ledgr/sandbox/entity/ConsentEntity.java), [`FiSessionEntity`](file:///src/main/java/com/ledgr/sandbox/entity/FiSessionEntity.java)):
+   Stores cryptographic AA consent artifacts, session tokens, and digital signatures.
+
+---
+
+## 📡 REST API Directory & Quick-Start
+
+In addition to the JavaFX desktop interface, Ledgr exposes a full REST API on port **`8085`**:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | System health, database connectivity, and record counts |
+| `POST` | `/api/v1/fiu/sync` | Executes end-to-end AA handshake and database sync |
+| `GET` | `/api/v1/fiu/accounts` | Lists all synchronized bank accounts from database |
+| `GET` | `/api/v1/fiu/transactions` | Filterable, paginated transaction ledger |
+| `GET` | `/api/v1/tools/auto-renewals` | **Feature 1**: Auto-renewals with 7-day advance early warnings |
+| `GET` | `/api/v1/tools/min-balance-shield` | **Feature 2**: Minimum Balance Shield breach trajectory |
+| `GET` | `/api/v1/tools/runway` | Scholarship runway calculation from database accounts |
+| `GET` | `/api/v1/tools/salary-sandbox` | Post-grad CTC take-home salary simulator |
+| `POST` | `/api/v1/simulator/transactions/generate` | Injects one realistic simulated transaction |
+| `GET` | `/api/v1/simulator/stream/events` | Server-Sent Events (SSE) live transaction feed |
+
+### Quick cURL Test Commands:
+```powershell
+# 1. Health check
+curl http://localhost:8085/api/v1/health
+
+# 2. Check Auto-Renewal Early Warnings
+curl "http://localhost:8085/api/v1/tools/auto-renewals?lookaheadDays=30"
+
+# 3. Check Minimum Balance Shield
+curl "http://localhost:8085/api/v1/tools/min-balance-shield?minBalanceThreshold=1000"
+
+# 4. Simulate Salary in Bangalore
+curl "http://localhost:8085/api/v1/tools/salary-sandbox?ctc=1200000&city=Bangalore"
+```
+
+---
+
+## 🧪 Automated Test Suite
+
+To run the automated integration tests verifying database persistence, ReBIT AA ingestion, and warning logic:
 
 **Windows:**
 ```powershell
@@ -134,91 +356,26 @@ Run integration tests (including Plaid banking sandbox tests and entity persiste
 ./mvnw test
 ```
 
----
-
-## 📡 API Endpoints Reference
-
-### 1. System & Health
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Web UI Dashboard |
-| `GET` | `/api` or `/api/v1` | Complete API directory & service metadata |
-| `GET` | `/api/v1/health` | System health status & database entity metrics |
-| `GET` | `/actuator/health` | Spring Boot Actuator health endpoint |
-
-### 2. Plaid Banking Sandbox Gateway
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/v1/banking/sync` | Master sync: Fetches live data from Banking API and ingests into Database with simulated delay |
-| `POST` | `/api/v1/banking/transactions/sync` | Fetches transactions from Banking API and persists directly into Database |
-| `GET` | `/api/v1/banking/transactions` | Lists all transactions currently stored in the database |
-| `GET` | `/api/v1/banking/token` | Returns active or newly generated sandbox access token |
-| `GET` | `/api/v1/banking/accounts` | Fetches account information from Banking Sandbox |
-
-### 3. RBI AA Protocol Sandbox
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/v1/aa/consents` | Create a new ReBIT AA consent request |
-| `GET` | `/api/v1/aa/consents/{consentId}` | Fetch status of consent |
-| `POST` | `/api/v1/aa/consents/{consentId}/approve` | Verify OTP (default `123456`) and activate consent |
-| `POST` | `/api/v1/aa/consents/{consentId}/revoke` | Revoke active consent |
-| `POST` | `/api/v1/aa/fi/request` | Initiate financial information fetch session |
-| `GET` | `/api/v1/aa/fi/fetch/{sessionId}` | Fetch decrypted ReBIT statement payload |
-| `GET` | `/api/v1/aa/mock/raw` | Get raw multi-account mock dataset |
-
-### 4. FIU Data Ingestion & Ledger
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/v1/fiu/sync` | One-click full AA handshake and database sync |
-| `GET` | `/api/v1/fiu/accounts` | List all synchronized bank accounts |
-| `GET` | `/api/v1/fiu/accounts/{accountId}` | Get details of a single account |
-| `GET` | `/api/v1/fiu/accounts/{accountId}/transactions` | Get transactions for a specific account |
-| `GET` | `/api/v1/fiu/transactions` | Search & filter transactions (`search`, `category`, `txnType`, `page`, `size`) |
-| `GET` | `/api/v1/fiu/analytics/overview` | Student financial overview (balances, burn rate, runway, breakdown) |
-
-### 5. Real-Time Transaction Simulator
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/v1/simulator/transactions/generate` | Generate an instant realistic transaction and update balances |
-| `POST` | `/api/v1/simulator/stream/start?intervalSeconds=3` | Start continuous background transaction stream |
-| `POST` | `/api/v1/simulator/stream/stop` | Stop background stream |
-| `GET` | `/api/v1/simulator/stream/status` | Check if streaming is currently running |
-| `GET` | `/api/v1/simulator/stream/events` | **Server-Sent Events (SSE)** live stream feed |
-
-### 6. Student FinTech Calculators
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/v1/tools/runway` | Scholarship runway calculator (`customMonthlyBurn`, `includeFdBuffer`) |
-| `GET` | `/api/v1/tools/salary-sandbox` | Post-graduation CTC-to-in-hand salary simulator (`ctc`, `city`) |
-| `GET` | `/api/v1/tools/roommate-splits` | Roommate shared expense ledger & split debts calculation (`totalRoommates`) |
-| `GET` | `/api/v1/tools/renewal-warnings` | **Auto-Renewal Early Warnings**: Detects recurring debits & warns if balance dips below threshold (`minBalanceThreshold`, `lookaheadDays`, `simulatedBalance`) |
+### Verified Test Classes:
+- [`BankingSyncServiceTest`](file:///src/test/java/com/ledgr/BankingSyncServiceTest.java): Verifies multi-endpoint Plaid/banking sandbox synchronization, schema mapping, and database transaction insertion.
+- [`RenewalWarningsTest`](file:///src/test/java/com/ledgr/RenewalWarningsTest.java): Verifies 7-day advance notice calculations, buffer deficits, MAB breach detection, and top-up recommendations.
 
 ---
 
-## ⚡ Quick Start Workflow via cURL / PowerShell
+## 🔧 Troubleshooting & FAQ
 
-```powershell
-# 1. Check health
-curl http://localhost:8085/api/v1/health
+#### 1. Why does the terminal show strange characters like `Γé╣` instead of `₹`?
+- **Cause**: Windows default terminal codepage is CP437 or Windows-1252.
+- **Solution**: Run `chcp 65001` in your terminal prior to running Maven, or use Windows Terminal / PowerShell 7. The JavaFX GUI uses native Unicode escape sequences (`\u20B9`) and displays correctly regardless of terminal codepage.
 
-# 2. Synchronize Bank Accounts from RBI AA Sandbox
-curl -X POST http://localhost:8085/api/v1/fiu/sync
+#### 2. Port `8085` or `8080` is already in use
+- Change the port in your `.env` file (`SERVER_PORT=8090`) or run:
+  ```powershell
+  .\mvnw.cmd javafx:run -Dspring-boot.run.arguments="--server.port=8090"
+  ```
 
-# 3. Synchronize Live Banking Sandbox Data (Plaid)
-curl -X POST http://localhost:8085/api/v1/banking/sync
+#### 3. Do I need to install or configure PostgreSQL?
+- **No**. If PostgreSQL is not running locally, Ledgr automatically detects the absence and initializes an in-memory **H2 database** with full PostgreSQL compatibility syntax.
 
-# 4. View Aggregated Financial Overview & Runway
-curl http://localhost:8085/api/v1/fiu/analytics/overview
-
-# 5. Search Transactions (e.g., Swiggy, UPI, Dining)
-curl "http://localhost:8085/api/v1/fiu/transactions?search=swiggy"
-
-# 6. Generate Instant Simulated Transaction
-curl -X POST http://localhost:8085/api/v1/simulator/transactions/generate
-
-# 7. Test Student Salary Sandbox
-curl "http://localhost:8085/api/v1/tools/salary-sandbox?ctc=1200000&city=Bangalore"
-
-# 8. Check Auto-Renewal Early Warnings & Minimum Balance Protection
-curl "http://localhost:8085/api/v1/tools/renewal-warnings?minBalanceThreshold=1000&lookaheadDays=14"
-```
+#### 4. Can I pause the live transaction stream?
+- **Yes**. Navigate to the **AA Sandbox & Realtime Simulator** tab in the desktop application and click **"Pause Simulator Stream"**, or make an HTTP POST call to `/api/v1/simulator/stream/stop`.

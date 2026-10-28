@@ -83,4 +83,66 @@ public class RenewalWarningsTest {
         assertTrue(lowBalanceCount > 0 || (int) body.get("criticalAlertsCount") > 0,
                 "Should flag either low balance or critical alerts");
     }
+
+    @Test
+    @DisplayName("Feature 1: Should provide rich auto-renewal data and explicitly warn before a week (<= 7 days)")
+    void testAutoRenewalsEarlyWarningWithinAWeek() {
+        ResponseEntity<Map<String, Object>> response = fintechToolsController.getAutoRenewals(30);
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCode().value());
+        Map<String, Object> body = response.getBody();
+        assertNotNull(body);
+
+        assertEquals("AUTO_RENEWAL_EARLY_WARNINGS", body.get("feature"));
+        int dueWithinWeek = (int) body.get("dueWithinAWeekCount");
+        assertTrue(dueWithinWeek > 0, "Should have auto-renewals due within a week (< 7 days)");
+        assertTrue((int) body.get("totalTrackedRenewals") >= 6, "Should track enough auto-renewals (at least 6-9)");
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> renewals = (List<Map<String, Object>>) body.get("renewals");
+        assertNotNull(renewals);
+
+        boolean found7DayWarning = false;
+        for (Map<String, Object> item : renewals) {
+            int days = (int) item.get("daysRemaining");
+            boolean dueWithinAWeek = (boolean) item.get("dueWithinAWeek");
+            String warningMsg = (String) item.get("warningMessage");
+
+            if (days <= 7) {
+                assertTrue(dueWithinAWeek, "Items with days <= 7 must have dueWithinAWeek=true");
+                assertTrue(warningMsg.contains("EARLY WARNING") || warningMsg.contains("CRITICAL WARNING"),
+                        "Items due within a week must provide explicit early warning to maintain balance");
+                found7DayWarning = true;
+            }
+        }
+        assertTrue(found7DayWarning, "Must have verified early warnings for renewals due within a week");
+    }
+
+    @Test
+    @DisplayName("Feature 2: Minimum Balance Shield must be a distinct feature with breach trajectory & top-up calculation")
+    void testMinimumBalanceShieldDistinctFeature() {
+        // Test with healthy balance
+        ResponseEntity<Map<String, Object>> safeRes = fintechToolsController.getMinBalanceShield(
+                BigDecimal.valueOf(1000), BigDecimal.valueOf(50000));
+        assertNotNull(safeRes);
+        Map<String, Object> safeBody = safeRes.getBody();
+        assertNotNull(safeBody);
+        assertEquals("MINIMUM_BALANCE_SHIELD", safeBody.get("feature"));
+        assertEquals("SHIELD_SECURE", safeBody.get("shieldStatus"));
+        assertFalse((boolean) safeBody.get("breachRiskDetected"));
+        assertEquals(BigDecimal.ZERO, safeBody.get("recommendedTopUp"));
+
+        // Test with low balance that triggers breach
+        ResponseEntity<Map<String, Object>> breachRes = fintechToolsController.getMinBalanceShield(
+                BigDecimal.valueOf(1000), BigDecimal.valueOf(1500));
+        assertNotNull(breachRes);
+        Map<String, Object> breachBody = breachRes.getBody();
+        assertNotNull(breachBody);
+        assertEquals("MINIMUM_BALANCE_SHIELD", breachBody.get("feature"));
+        assertTrue((boolean) breachBody.get("breachRiskDetected"), "Should detect breach when balance drops below 1000");
+        BigDecimal topUp = (BigDecimal) breachBody.get("recommendedTopUp");
+        assertTrue(topUp.compareTo(BigDecimal.ZERO) > 0, "Should calculate positive recommended top-up to restore shield");
+        assertNotNull(breachBody.get("threatTimeline"));
+    }
 }

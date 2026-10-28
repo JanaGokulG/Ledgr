@@ -143,6 +143,12 @@ public class FiuIngestionService {
 
             if (summary != null) {
                 BigDecimal bal = parseBigDecimal(summary.getCurrentBalance());
+                if (bal.compareTo(BigDecimal.ZERO) == 0 && summary.getCurrentValue() != null) {
+                    bal = parseBigDecimal(summary.getCurrentValue());
+                }
+                if (bal.compareTo(BigDecimal.ZERO) == 0 && summary.getPrincipalAmount() != null) {
+                    bal = parseBigDecimal(summary.getPrincipalAmount());
+                }
                 account.setCurrentBalance(bal);
                 account.setCurrency(summary.getCurrency() != null ? summary.getCurrency().trim() : "INR");
                 account.setIfsc(summary.getIfsc());
@@ -175,7 +181,11 @@ public class FiuIngestionService {
                 account.setInterestComputation(summary.getInterestComputation());
 
                 if ("FIXED".equalsIgnoreCase(account.getAccountType()) || "TERM-DEPOSIT".equalsIgnoreCase(fiType)) {
-                    fdAssets = fdAssets.add(bal != null ? bal : parseBigDecimal(summary.getCurrentValue()));
+                    BigDecimal fdVal = (bal != null && bal.compareTo(BigDecimal.ZERO) > 0) ? bal : parseBigDecimal(summary.getCurrentValue());
+                    if (fdVal.compareTo(BigDecimal.ZERO) == 0 && summary.getMaturityAmount() != null) {
+                        fdVal = parseBigDecimal(summary.getMaturityAmount());
+                    }
+                    fdAssets = fdAssets.add(fdVal);
                 }
 
                 if (summary.getRecurringAmount() != null) {
@@ -185,7 +195,11 @@ public class FiuIngestionService {
                     try { account.setRecurringDepositDay(Integer.parseInt(summary.getRecurringDepositDay())); } catch (NumberFormatException ignored) {}
                 }
                 if ("RECURRING".equalsIgnoreCase(account.getAccountType()) || "RECURRING_DEPOSIT".equalsIgnoreCase(fiType)) {
-                    rdAssets = rdAssets.add(bal != null ? bal : parseBigDecimal(summary.getCurrentValue()));
+                    BigDecimal rdVal = (bal != null && bal.compareTo(BigDecimal.ZERO) > 0) ? bal : parseBigDecimal(summary.getCurrentValue());
+                    if (rdVal.compareTo(BigDecimal.ZERO) == 0 && summary.getRecurringAmount() != null) {
+                        rdVal = parseBigDecimal(summary.getRecurringAmount()).multiply(BigDecimal.valueOf(7));
+                    }
+                    rdAssets = rdAssets.add(rdVal);
                 }
             }
 

@@ -20,11 +20,14 @@ public class FintechToolsController {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final com.ledgr.repository.RecurringRenewalRepository recurringRenewalRepository;
 
     public FintechToolsController(AccountRepository accountRepository,
-                                  TransactionRepository transactionRepository) {
+                                  TransactionRepository transactionRepository,
+                                  com.ledgr.repository.RecurringRenewalRepository recurringRenewalRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.recurringRenewalRepository = recurringRenewalRepository;
     }
 
     /**
@@ -182,9 +185,183 @@ public class FintechToolsController {
     }
 
     /**
-     * Auto-Renewal Early Warnings & Minimum Balance Shield
-     * Scans recurring auto-debit payments (Subscriptions, Recurring Deposits, EMIs, Utility Bills)
-     * and alerts if balance is insufficient or will fall below minimum balance threshold.
+     * FEATURE 1: Auto-Renewal Early Warnings
+     * Scans regular recurring subscriptions and scheduled auto-debits (Netflix, Spotify, Campus Wi-Fi,
+     * Simpl BNPL, Gym, RD, etc.). Specifically warns before a week (<= 7 days) to maintain sufficient
+     * balance in the funding account before execution date to prevent bounce penalties.
+     */
+    @GetMapping("/auto-renewals")
+    public ResponseEntity<Map<String, Object>> getAutoRenewals(
+            @RequestParam(required = false, defaultValue = "30") int lookaheadDays) {
+
+        AccountEntity primaryAccount = getPrimarySavingsAccount();
+        BigDecimal currentBalance = primaryAccount != null && primaryAccount.getCurrentBalance() != null
+                ? primaryAccount.getCurrentBalance() : BigDecimal.ZERO;
+        String fundingAccountNumber = primaryAccount != null ? primaryAccount.getAccountNumber() : "SB-1002938172";
+
+        List<Map<String, Object>> allRenewals = getRecurringRenewalsList(fundingAccountNumber, currentBalance);
+
+        // Filter by lookahead
+        List<Map<String, Object>> filtered = new ArrayList<>();
+        BigDecimal totalUpcomingAmount = BigDecimal.ZERO;
+        BigDecimal dueWithinAWeekAmount = BigDecimal.ZERO;
+        int dueWithinAWeekCount = 0;
+
+        for (Map<String, Object> item : allRenewals) {
+            int days = (int) item.get("daysRemaining");
+            if (days <= lookaheadDays) {
+                filtered.add(item);
+                BigDecimal amt = (BigDecimal) item.get("amount");
+                totalUpcomingAmount = totalUpcomingAmount.add(amt);
+                boolean dueWithinWeek = (boolean) item.get("dueWithinAWeek");
+                if (dueWithinWeek) {
+                    dueWithinAWeekCount++;
+                    dueWithinAWeekAmount = dueWithinAWeekAmount.add(amt);
+                }
+            }
+        }
+
+        boolean balanceSufficientForWeek = currentBalance.compareTo(dueWithinAWeekAmount) >= 0;
+        BigDecimal weeklyDeficit = dueWithinAWeekAmount.compareTo(currentBalance) > 0
+                ? dueWithinAWeekAmount.subtract(currentBalance)
+                : BigDecimal.ZERO;
+
+        String weeklyWarningHeadline;
+        if (dueWithinAWeekCount > 0) {
+            if (!balanceSufficientForWeek) {
+                weeklyWarningHeadline = String.format(
+                        "\uD83D\uDEA8 URGENT ACTION REQUIRED: %d auto-renewal(s) totaling \u20B9%,.2f are due within 7 days. Your balance (\u20B9%,.2f) is short by \u20B9%,.2f! Maintain sufficient balance immediately to prevent auto-debit bounce and penalty fees.",
+                        dueWithinAWeekCount, dueWithinAWeekAmount, currentBalance, weeklyDeficit);
+            } else {
+                weeklyWarningHeadline = String.format(
+                        "\u26A0\uFE0F EARLY WARNING (7-DAY NOTICE): %d auto-renewal(s) totaling \u20B9%,.2f are scheduled to debit within 7 days. Maintain at least this amount in %s before due dates to prevent bounce penalties.",
+                        dueWithinAWeekCount, dueWithinAWeekAmount, fundingAccountNumber);
+            }
+        } else {
+            weeklyWarningHeadline = "\u2705 All clear: No auto-renewals scheduled within the next 7 days.";
+        }
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("feature", "AUTO_RENEWAL_EARLY_WARNINGS");
+        res.put("status", dueWithinAWeekCount > 0 ? (balanceSufficientForWeek ? "EARLY_WARNING_ACTIVE" : "CRITICAL_INSUFFICIENT_BALANCE") : "ALL_CLEAR");
+        res.put("headline", weeklyWarningHeadline);
+        res.put("fundingAccountNumber", fundingAccountNumber);
+        res.put("currentBalance", currentBalance);
+        res.put("totalTrackedRenewals", filtered.size());
+        res.put("dueWithinAWeekCount", dueWithinAWeekCount);
+        res.put("dueWithinAWeekTotalAmount", dueWithinAWeekAmount);
+        res.put("totalLookaheadCommitment", totalUpcomingAmount);
+        res.put("balanceSufficientForWeek", balanceSufficientForWeek);
+        res.put("weeklyBalanceDeficit", weeklyDeficit);
+        res.put("renewals", filtered);
+
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * FEATURE 2: Minimum Balance Shield
+     * Dedicated bank account protection engine that tracks the Minimum Average Balance (MAB) / Minimum Balance
+     * requirement. Analyzes scheduled debits in the next 7 and 30 days, projects balance trajectory,
+     * detects breach risks before they occur, and calculates required top-up to maintain the safety buffer.
+     */
+    @GetMapping("/min-balance-shield")
+    public ResponseEntity<Map<String, Object>> getMinBalanceShield(
+            @RequestParam(required = false, defaultValue = "1000") BigDecimal minBalanceThreshold,
+            @RequestParam(required = false) BigDecimal simulatedBalance) {
+
+        AccountEntity primaryAccount = getPrimarySavingsAccount();
+        BigDecimal actualBalance = primaryAccount != null && primaryAccount.getCurrentBalance() != null
+                ? primaryAccount.getCurrentBalance() : BigDecimal.ZERO;
+        String fundingAccountNumber = primaryAccount != null ? primaryAccount.getAccountNumber() : "SB-1002938172";
+        String bankName = primaryAccount != null && primaryAccount.getBranchName() != null ? "ICICI Bank (" + primaryAccount.getBranchName() + ")" : "Primary Bank";
+
+        BigDecimal activeBalance = simulatedBalance != null ? simulatedBalance : actualBalance;
+
+        List<Map<String, Object>> allRenewals = getRecurringRenewalsList(fundingAccountNumber, activeBalance);
+
+        BigDecimal debitsNext7Days = BigDecimal.ZERO;
+        BigDecimal debitsNext30Days = BigDecimal.ZERO;
+        List<Map<String, Object>> threatTimeline = new ArrayList<>();
+
+        BigDecimal runningBalance = activeBalance;
+        for (Map<String, Object> r : allRenewals) {
+            int days = (int) r.get("daysRemaining");
+            BigDecimal amt = (BigDecimal) r.get("amount");
+            if (days <= 30) {
+                debitsNext30Days = debitsNext30Days.add(amt);
+                if (days <= 7) {
+                    debitsNext7Days = debitsNext7Days.add(amt);
+                }
+                runningBalance = runningBalance.subtract(amt);
+                Map<String, Object> step = new LinkedHashMap<>();
+                step.put("serviceName", r.get("serviceName"));
+                step.put("amount", amt);
+                step.put("dueDate", r.get("dueDate"));
+                step.put("daysRemaining", days);
+                step.put("dueWithinAWeek", r.get("dueWithinAWeek"));
+                step.put("projectedBalanceAfter", runningBalance);
+                step.put("breachesMinBalance", runningBalance.compareTo(minBalanceThreshold) < 0);
+                threatTimeline.add(step);
+            }
+        }
+
+        BigDecimal projectedBalance7Days = activeBalance.subtract(debitsNext7Days);
+        BigDecimal projectedBalance30Days = activeBalance.subtract(debitsNext30Days);
+        BigDecimal safetyBuffer7Days = projectedBalance7Days.subtract(minBalanceThreshold);
+        BigDecimal safetyBuffer30Days = projectedBalance30Days.subtract(minBalanceThreshold);
+
+        boolean breachRisk7Days = projectedBalance7Days.compareTo(minBalanceThreshold) < 0;
+        boolean overdraftRisk7Days = projectedBalance7Days.compareTo(BigDecimal.ZERO) < 0;
+
+        BigDecimal deficitAmount = breachRisk7Days ? minBalanceThreshold.subtract(projectedBalance7Days) : BigDecimal.ZERO;
+        BigDecimal recommendedTopUp = debitsNext7Days.add(minBalanceThreshold).compareTo(activeBalance) > 0
+                ? debitsNext7Days.add(minBalanceThreshold).subtract(activeBalance)
+                : BigDecimal.ZERO;
+
+        String shieldStatus;
+        String statusHeadline;
+        if (overdraftRisk7Days) {
+            shieldStatus = "CRITICAL_OVERDRAFT_DEFICIT";
+            statusHeadline = String.format(
+                    "\uD83D\uDEA8 SHIELD CRITICAL: Upcoming 7-day debits (\u20B9%,.2f) will overdraft your account to -\u20B9%,.2f! Deposit \u20B9%,.2f immediately to restore the \u20B9%,.2f minimum balance.",
+                    debitsNext7Days, projectedBalance7Days.abs(), recommendedTopUp, minBalanceThreshold);
+        } else if (breachRisk7Days) {
+            shieldStatus = "BREACH_RISK_DETECTED";
+            statusHeadline = String.format(
+                    "\u26A0\uFE0F SHIELD BREACH WARNING: Balance will drop to \u20B9%,.2f after next week's debits, which is \u20B9%,.2f below the \u20B9%,.2f minimum balance requirement. Top up \u20B9%,.2f to avoid bank non-maintenance fees.",
+                    projectedBalance7Days, deficitAmount, minBalanceThreshold, recommendedTopUp);
+        } else {
+            shieldStatus = "SHIELD_SECURE";
+            statusHeadline = String.format(
+                    "\uD83D\uDEE1\uFE0F MINIMUM BALANCE SHIELD SECURE: Projected balance of \u20B9%,.2f maintains a robust safety buffer of \u20B9%,.2f above the \u20B9%,.2f threshold.",
+                    projectedBalance7Days, safetyBuffer7Days, minBalanceThreshold);
+        }
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("feature", "MINIMUM_BALANCE_SHIELD");
+        res.put("shieldStatus", shieldStatus);
+        res.put("statusHeadline", statusHeadline);
+        res.put("accountNumber", fundingAccountNumber);
+        res.put("bankName", bankName);
+        res.put("currentBalance", activeBalance);
+        res.put("isSimulatedBalance", simulatedBalance != null);
+        res.put("minimumBalanceThreshold", minBalanceThreshold);
+        res.put("upcomingDebitsNext7Days", debitsNext7Days);
+        res.put("upcomingDebitsNext30Days", debitsNext30Days);
+        res.put("projectedBalanceAfter7Days", projectedBalance7Days);
+        res.put("projectedBalanceAfter30Days", projectedBalance30Days);
+        res.put("safetyBuffer7Days", safetyBuffer7Days);
+        res.put("safetyBuffer30Days", safetyBuffer30Days);
+        res.put("breachRiskDetected", breachRisk7Days);
+        res.put("deficitAmount", deficitAmount);
+        res.put("recommendedTopUp", recommendedTopUp);
+        res.put("threatTimeline", threatTimeline);
+
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * Backwards-compatible combined endpoint for existing unit tests
      */
     @GetMapping("/renewal-warnings")
     public ResponseEntity<Map<String, Object>> getRenewalWarnings(
@@ -192,151 +369,41 @@ public class FintechToolsController {
             @RequestParam(required = false, defaultValue = "14") int lookaheadDays,
             @RequestParam(required = false) BigDecimal simulatedBalance) {
 
-        List<AccountEntity> accounts = accountRepository.findAll();
-        AccountEntity primaryAccount = null;
-        BigDecimal actualLiquidBalance = BigDecimal.ZERO;
-
-        for (AccountEntity acc : accounts) {
-            BigDecimal bal = acc.getCurrentBalance() != null ? acc.getCurrentBalance() : BigDecimal.ZERO;
-            if ("SAVINGS".equalsIgnoreCase(acc.getAccountType()) || "DEPOSIT".equalsIgnoreCase(acc.getFiType())) {
-                if (primaryAccount == null || bal.compareTo(actualLiquidBalance) > 0) {
-                    primaryAccount = acc;
-                    actualLiquidBalance = bal;
-                }
-            }
-        }
+        AccountEntity primaryAccount = getPrimarySavingsAccount();
+        BigDecimal actualLiquidBalance = primaryAccount != null && primaryAccount.getCurrentBalance() != null
+                ? primaryAccount.getCurrentBalance() : BigDecimal.ZERO;
+        String fundingAccountNumber = primaryAccount != null ? primaryAccount.getAccountNumber() : "SB-1002938172";
 
         BigDecimal activeBalance = simulatedBalance != null ? simulatedBalance : actualLiquidBalance;
-        String fundingAccountNumber = primaryAccount != null ? primaryAccount.getAccountNumber() : "SB-PRIMARY";
 
-        LocalDate today = LocalDate.now();
+        List<Map<String, Object>> rawList = getRecurringRenewalsList(fundingAccountNumber, activeBalance);
         List<Map<String, Object>> upcomingPayments = new ArrayList<>();
         BigDecimal totalUpcomingAmount = BigDecimal.ZERO;
         BigDecimal totalAtRiskAmount = BigDecimal.ZERO;
         int criticalCount = 0;
         int warningCount = 0;
 
-        // 1. Scan Recurring Deposits (RD) from Accounts
-        for (AccountEntity acc : accounts) {
-            if ("RECURRING".equalsIgnoreCase(acc.getAccountType()) ||
-                (acc.getRecurringAmount() != null && acc.getRecurringAmount().compareTo(BigDecimal.ZERO) > 0)) {
-                
-                BigDecimal amount = acc.getRecurringAmount() != null ? acc.getRecurringAmount() : BigDecimal.valueOf(1000);
-                int dueDay = acc.getRecurringDepositDay() != null ? acc.getRecurringDepositDay() : 5;
-                dueDay = Math.min(Math.max(dueDay, 1), 28);
-                
-                LocalDate dueDate = today.withDayOfMonth(dueDay);
-                if (dueDate.isBefore(today)) {
-                    dueDate = dueDate.plusMonths(1);
+        for (Map<String, Object> item : rawList) {
+            int days = (int) item.get("daysRemaining");
+            if (days <= lookaheadDays) {
+                BigDecimal amt = (BigDecimal) item.get("amount");
+                String name = (String) item.get("serviceName");
+                String cat = (String) item.get("category");
+                String dueDate = (String) item.get("dueDate");
+                String note = (String) item.get("advisoryNote");
+
+                Map<String, Object> p = buildPaymentAlert(name, cat, amt, dueDate, days, fundingAccountNumber, activeBalance, minBalanceThreshold, note);
+                upcomingPayments.add(p);
+                totalUpcomingAmount = totalUpcomingAmount.add(amt);
+
+                String status = (String) p.get("status");
+                if ("CRITICAL_INSUFFICIENT".equals(status)) {
+                    criticalCount++;
+                    totalAtRiskAmount = totalAtRiskAmount.add(amt);
+                } else if ("WARNING_LOW_BALANCE".equals(status)) {
+                    warningCount++;
+                    totalAtRiskAmount = totalAtRiskAmount.add(amt);
                 }
-                long daysRemaining = ChronoUnit.DAYS.between(today, dueDate);
-
-                if (daysRemaining <= lookaheadDays) {
-                    upcomingPayments.add(buildPaymentAlert(
-                            "Recurring Deposit (RD) Installment",
-                            "SAVINGS_RD",
-                            amount,
-                            dueDate.toString(),
-                            (int) daysRemaining,
-                            fundingAccountNumber,
-                            activeBalance,
-                            minBalanceThreshold,
-                            "Mandatory bank RD installment deduction. Bounces trigger RD forfeiture and penalty charges."
-                    ));
-                    totalUpcomingAmount = totalUpcomingAmount.add(amount);
-                }
-            }
-        }
-
-        // 2. Scan Subscriptions & Recurring Bills from Transactions
-        List<TransactionEntity> allTxns = transactionRepository.findAll();
-        Map<String, TransactionEntity> latestRecurringMap = new LinkedHashMap<>();
-
-        for (TransactionEntity t : allTxns) {
-            String cat = t.getCategory() != null ? t.getCategory().toUpperCase() : "";
-            String narr = t.getNarration() != null ? t.getNarration().toLowerCase() : "";
-            String payee = t.getMerchantPayee() != null ? t.getMerchantPayee() : "Recurring Service";
-
-            boolean isRecurring = cat.contains("SUBSCRIPTION") || cat.contains("ESCROW") ||
-                    narr.contains("netflix") || narr.contains("spotify") || narr.contains("prime") ||
-                    narr.contains("simpl") || narr.contains("wifi") || narr.contains("electricity") ||
-                    narr.contains("hotstar") || narr.contains("gym") || narr.contains("chatgpt") || narr.contains("copilot");
-
-            if (isRecurring && "DEBIT".equalsIgnoreCase(t.getTxnType())) {
-                latestRecurringMap.put(payee.trim(), t);
-            }
-        }
-
-        // Standard student recurring services list if history has items or default set
-        if (latestRecurringMap.isEmpty()) {
-            latestRecurringMap.put("Netflix Student Plan", TransactionEntity.builder()
-                    .merchantPayee("Netflix")
-                    .amount(BigDecimal.valueOf(199.00))
-                    .category("SUBSCRIPTIONS")
-                    .transactionTimestamp(today.minusDays(27).toString())
-                    .narration("ACH/NETFLIX/48192839/Monthly Student Subscription")
-                    .build());
-            latestRecurringMap.put("Spotify Premium", TransactionEntity.builder()
-                    .merchantPayee("Spotify")
-                    .amount(BigDecimal.valueOf(59.00))
-                    .category("SUBSCRIPTIONS")
-                    .transactionTimestamp(today.minusDays(25).toString())
-                    .narration("UPI/991827364/spotify.india@hdfc/Music Premium Student Plan")
-                    .build());
-            latestRecurringMap.put("Campus Wi-Fi & Maintenance", TransactionEntity.builder()
-                    .merchantPayee("Campus Network")
-                    .amount(BigDecimal.valueOf(450.00))
-                    .category("UTILITIES")
-                    .transactionTimestamp(today.minusDays(26).toString())
-                    .narration("UPI/628192738/campus.wifi@axis/High-Speed Hostel Bandwidth")
-                    .build());
-            latestRecurringMap.put("Simpl BNPL Grocery Tab", TransactionEntity.builder()
-                    .merchantPayee("Simpl")
-                    .amount(BigDecimal.valueOf(650.00))
-                    .category("BNPL_LIFESTYLE")
-                    .transactionTimestamp(today.minusDays(28).toString())
-                    .narration("UPI/192837465/simpl.pay@axis/BNPL Monthly Grocery Tab")
-                    .build());
-        }
-
-        int offsetCounter = 2;
-        for (Map.Entry<String, TransactionEntity> entry : latestRecurringMap.entrySet()) {
-            TransactionEntity txn = entry.getValue();
-            BigDecimal amount = txn.getAmount() != null ? txn.getAmount() : BigDecimal.valueOf(199.00);
-            
-            // Project renewal date ~30 days from last transaction or staggered in next 2-10 days
-            LocalDate dueDate = today.plusDays(offsetCounter);
-            offsetCounter += 3;
-            long daysRemaining = ChronoUnit.DAYS.between(today, dueDate);
-
-            if (daysRemaining <= lookaheadDays) {
-                upcomingPayments.add(buildPaymentAlert(
-                        entry.getKey(),
-                        txn.getCategory() != null ? txn.getCategory() : "SUBSCRIPTIONS",
-                        amount,
-                        dueDate.toString(),
-                        (int) daysRemaining,
-                        fundingAccountNumber,
-                        activeBalance,
-                        minBalanceThreshold,
-                        "Recurring auto-debit via UPI/e-Mandate. Ensure balance exceeds minimum requirement."
-                ));
-                totalUpcomingAmount = totalUpcomingAmount.add(amount);
-            }
-        }
-
-        // Sort payments by days remaining (closest first)
-        upcomingPayments.sort(Comparator.comparingInt(p -> (int) p.get("daysRemaining")));
-
-        // Count warnings
-        for (Map<String, Object> p : upcomingPayments) {
-            String status = (String) p.get("status");
-            if ("CRITICAL_INSUFFICIENT".equals(status)) {
-                criticalCount++;
-                totalAtRiskAmount = totalAtRiskAmount.add((BigDecimal) p.get("amount"));
-            } else if ("WARNING_LOW_BALANCE".equals(status)) {
-                warningCount++;
-                totalAtRiskAmount = totalAtRiskAmount.add((BigDecimal) p.get("amount"));
             }
         }
 
@@ -351,13 +418,13 @@ public class FintechToolsController {
 
         String headline;
         if (criticalCount > 0) {
-            headline = String.format("🚨 CRITICAL ALERT: %d auto-debit(s) will bounce due to insufficient funds! Maintain at least ₹%,.2f to protect your credit score.",
+            headline = String.format("\uD83D\uDEA8 CRITICAL ALERT: %d auto-debit(s) will bounce due to insufficient funds! Maintain at least \u20B9%,.2f to protect your credit score.",
                     criticalCount, recommendedTopUp);
         } else if (warningCount > 0) {
-            headline = String.format("⚠️ EARLY WARNING: %d auto-renewal(s) due soon. Your balance will drop below the ₹%,.2f minimum balance threshold.",
+            headline = String.format("\u26A0\uFE0F EARLY WARNING: %d auto-renewal(s) due soon. Your balance will drop below the \u20B9%,.2f minimum balance threshold.",
                     warningCount, minBalanceThreshold);
         } else {
-            headline = String.format("✅ SAFE: Your balance of ₹%,.2f comfortably covers all upcoming renewals and maintains the ₹%,.2f minimum balance threshold.",
+            headline = String.format("\u2705 SAFE: Your balance of \u20B9%,.2f comfortably covers all upcoming renewals and maintains the \u20B9%,.2f minimum balance threshold.",
                     activeBalance, minBalanceThreshold);
         }
 
@@ -381,6 +448,213 @@ public class FintechToolsController {
         return ResponseEntity.ok(response);
     }
 
+    private AccountEntity getPrimarySavingsAccount() {
+        List<AccountEntity> accounts = accountRepository.findAll();
+        AccountEntity primary = null;
+        BigDecimal maxBal = BigDecimal.ZERO;
+        for (AccountEntity acc : accounts) {
+            BigDecimal bal = acc.getCurrentBalance() != null ? acc.getCurrentBalance() : BigDecimal.ZERO;
+            if ("SAVINGS".equalsIgnoreCase(acc.getAccountType()) || "DEPOSIT".equalsIgnoreCase(acc.getFiType())) {
+                if (primary == null || bal.compareTo(maxBal) > 0) {
+                    primary = acc;
+                    maxBal = bal;
+                }
+            }
+        }
+        return primary;
+    }
+
+    @jakarta.annotation.PostConstruct
+    public void initDatabaseRenewalsIfEmpty() {
+        if (recurringRenewalRepository.count() == 0) {
+            seedRenewalsToDatabase("SB-XXXXXXXX3329");
+        }
+    }
+
+    public synchronized void seedRenewalsToDatabase(String fundingAccount) {
+        LocalDate today = LocalDate.now();
+        String acc = fundingAccount != null ? fundingAccount : "SB-XXXXXXXX3329";
+        List<com.ledgr.entity.RecurringRenewalEntity> seeds = List.of(
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Netflix Student Plan")
+                        .category("ENTERTAINMENT")
+                        .amount(BigDecimal.valueOf(199.00))
+                        .dueDate(today.plusDays(2))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("UPI_AUTOPAY")
+                        .advisoryNote("Monthly streaming subscription via UPI AutoPay. Ensure sufficient balance 7 days prior to prevent service interruption.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Campus Wi-Fi & Maintenance")
+                        .category("UTILITIES")
+                        .amount(BigDecimal.valueOf(450.00))
+                        .dueDate(today.plusDays(3))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("CAMPUS_DIRECT_DEBIT")
+                        .advisoryNote("Hostel high-speed fiber internet and portal access. Debited automatically by campus admin.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Spotify Premium Student")
+                        .category("ENTERTAINMENT")
+                        .amount(BigDecimal.valueOf(59.00))
+                        .dueDate(today.plusDays(4))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("NACH_E_MANDATE")
+                        .advisoryNote("Ad-free student audio subscription via NACH mandate. Bounces cause immediate plan cancellation.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Simpl BNPL Grocery Tab")
+                        .category("FINTECH_BNPL")
+                        .amount(BigDecimal.valueOf(650.00))
+                        .dueDate(today.plusDays(5))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("UPI_AUTOPAY")
+                        .advisoryNote("Bi-monthly pay-later bill for student canteen and Zepto orders. Late fee of \u20B9250 applies upon default.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("FitGym Student Pass")
+                        .category("FITNESS_HEALTH")
+                        .amount(BigDecimal.valueOf(1200.00))
+                        .dueDate(today.plusDays(6))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("DEBIT_CARD_RECURRING")
+                        .advisoryNote("Monthly campus gym and fitness pass auto-debit.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Amazon Prime Student")
+                        .category("LIFESTYLE")
+                        .amount(BigDecimal.valueOf(125.00))
+                        .dueDate(today.plusDays(7))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("ANNUAL_AMORTIZED")
+                        .mandateType("UPI_AUTOPAY")
+                        .advisoryNote("Annual student discount package amortized monthly. Free delivery and Prime Video access.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Recurring Deposit (RD) Installment")
+                        .category("BANKING_SAVINGS")
+                        .amount(BigDecimal.valueOf(1000.00))
+                        .dueDate(today.plusDays(12))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("BANK_STANDING_INSTRUCTION")
+                        .advisoryNote("Mandatory monthly bank RD installment. Bounces trigger RD forfeiture and \u20B9100 bank penalty.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("Student Term Health Cover")
+                        .category("INSURANCE")
+                        .amount(BigDecimal.valueOf(499.00))
+                        .dueDate(today.plusDays(18))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("NACH_E_MANDATE")
+                        .advisoryNote("\u20B95,00,000 cashless medical insurance policy premium.")
+                        .active(true)
+                        .build(),
+                com.ledgr.entity.RecurringRenewalEntity.builder()
+                        .serviceName("GitHub Copilot & Cloud Sandbox")
+                        .category("EDUCATION_TECH")
+                        .amount(BigDecimal.valueOf(820.00))
+                        .dueDate(today.plusDays(24))
+                        .fundingAccountNumber(acc)
+                        .billingCycle("MONTHLY")
+                        .mandateType("INTERNATIONAL_DEBIT_MANDATE")
+                        .advisoryNote("Developer workspace and AI cloud credits. Auto-renewed via international debit mandate.")
+                        .active(true)
+                        .build()
+        );
+        recurringRenewalRepository.saveAll(seeds);
+    }
+
+    /**
+     * Loads recurring auto-renewals directly from the database table (recurring_renewals)
+     */
+    public List<Map<String, Object>> getRecurringRenewalsList(String fundingAccountNumber, BigDecimal currentBalance) {
+        if (recurringRenewalRepository.count() == 0) {
+            seedRenewalsToDatabase(fundingAccountNumber != null ? fundingAccountNumber : "SB-XXXXXXXX3329");
+        }
+
+        List<com.ledgr.entity.RecurringRenewalEntity> dbEntities = recurringRenewalRepository.findByActiveTrueOrderByDueDateAsc();
+        List<Map<String, Object>> list = new ArrayList<>();
+
+        for (com.ledgr.entity.RecurringRenewalEntity entity : dbEntities) {
+            list.add(createRenewalMap(
+                    entity.getServiceName(),
+                    entity.getCategory(),
+                    entity.getAmount(),
+                    entity.getDueDate(),
+                    entity.getFundingAccountNumber(),
+                    currentBalance,
+                    entity.getAdvisoryNote()
+            ));
+        }
+
+        list.sort(Comparator.comparingInt(m -> (int) m.get("daysRemaining")));
+        return list;
+    }
+
+    private Map<String, Object> createRenewalMap(
+            String serviceName,
+            String category,
+            BigDecimal amount,
+            LocalDate dueDate,
+            String fundingAccount,
+            BigDecimal currentBalance,
+            String advisoryNote) {
+
+        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), dueDate);
+        boolean dueWithinAWeek = daysRemaining <= 7;
+        BigDecimal projectedBalanceAfter = currentBalance.subtract(amount);
+
+        String warningMessage;
+        String status;
+        if (dueWithinAWeek) {
+            status = "DUE_WITHIN_WEEK";
+            if (currentBalance.compareTo(amount) < 0) {
+                BigDecimal deficit = amount.subtract(currentBalance);
+                warningMessage = String.format(
+                        "\uD83D\uDEA8 CRITICAL WARNING (Due in %d day%s): %s of \u20B9%,.2f will debit on %s. Balance (\u20B9%,.2f) is short by \u20B9%,.2f! Maintain sufficient balance immediately.",
+                        daysRemaining, daysRemaining == 1 ? "" : "s", serviceName, amount, dueDate, currentBalance, deficit);
+            } else {
+                warningMessage = String.format(
+                        "\u26A0\uFE0F EARLY WARNING: %s of \u20B9%,.2f is scheduled for auto-debit in %d day%s on %s. Maintain at least \u20B9%,.2f in %s to ensure seamless execution and avoid bounce fees.",
+                        serviceName, amount, daysRemaining, daysRemaining == 1 ? "" : "s", dueDate, amount, fundingAccount);
+            }
+        } else {
+            status = "UPCOMING_SCHEDULED";
+            warningMessage = String.format(
+                    "\uD83D\uDCC5 Scheduled: %s of \u20B9%,.2f will be auto-debited in %d days on %s from account %s.",
+                    serviceName, amount, daysRemaining, dueDate, fundingAccount);
+        }
+
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("serviceName", serviceName);
+        map.put("category", category);
+        map.put("amount", amount);
+        map.put("dueDate", dueDate.toString());
+        map.put("daysRemaining", (int) daysRemaining);
+        map.put("dueWithinAWeek", dueWithinAWeek);
+        map.put("fundingAccountNumber", fundingAccount);
+        map.put("status", status);
+        map.put("warningMessage", warningMessage);
+        map.put("advisoryNote", advisoryNote);
+        map.put("projectedBalanceAfterDeduction", projectedBalanceAfter);
+
+        return map;
+    }
+
     private Map<String, Object> buildPaymentAlert(
             String serviceName,
             String category,
@@ -402,18 +676,18 @@ public class FintechToolsController {
             severity = "CRITICAL";
             BigDecimal deficit = amount.subtract(currentBalance);
             BigDecimal neededDeposit = deficit.add(minThreshold);
-            warningMessage = String.format("🚨 Critical: %s of ₹%,.2f is due in %d day%s. Your balance (₹%,.2f) is insufficient by ₹%,.2f! Deposit ₹%,.2f immediately to prevent auto-debit failure and bank penalty charges.",
+            warningMessage = String.format("\uD83D\uDEA8 Critical: %s of \u20B9%,.2f is due in %d day%s. Your balance (\u20B9%,.2f) is insufficient by \u20B9%,.2f! Deposit \u20B9%,.2f immediately to prevent auto-debit failure and bank penalty charges.",
                     serviceName, amount, daysRemaining, daysRemaining == 1 ? "" : "s", currentBalance, deficit, neededDeposit);
         } else if (balanceAfter.compareTo(minThreshold) < 0) {
             status = "WARNING_LOW_BALANCE";
             severity = "WARNING";
             BigDecimal dipBelow = minThreshold.subtract(balanceAfter);
-            warningMessage = String.format("⚠️ Early Warning: %s renewal of ₹%,.2f is scheduled in %d day%s. Balance after deduction will drop to ₹%,.2f (₹%,.2f below the ₹%,.2f minimum balance threshold). Maintain minimum balance to prevent bank non-maintenance fines.",
+            warningMessage = String.format("\u26A0\uFE0F Early Warning: %s renewal of \u20B9%,.2f is scheduled in %d day%s. Balance after deduction will drop to \u20B9%,.2f (\u20B9%,.2f below the \u20B9%,.2f minimum balance threshold). Maintain minimum balance to prevent bank non-maintenance fines.",
                     serviceName, amount, daysRemaining, daysRemaining == 1 ? "" : "s", balanceAfter, dipBelow, minThreshold);
         } else {
             status = "SAFE";
             severity = "SAFE";
-            warningMessage = String.format("✅ Balance is healthy. ₹%,.2f will be deducted in %d day%s. Projected balance after payment: ₹%,.2f (maintains minimum balance threshold).",
+            warningMessage = String.format("\u2705 Balance is healthy. \u20B9%,.2f will be deducted in %d day%s. Projected balance after payment: \u20B9%,.2f (maintains minimum balance threshold).",
                     amount, daysRemaining, daysRemaining == 1 ? "" : "s", balanceAfter);
         }
 

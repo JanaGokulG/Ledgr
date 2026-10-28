@@ -23,8 +23,9 @@ public class ApiRootController {
     }
 
     @GetMapping("/")
-    public String index() {
-        return "forward:/index.html";
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> index() {
+        return getApiOverview();
     }
 
     @GetMapping(value = {"/api", "/api/v1"})
@@ -34,7 +35,7 @@ public class ApiRootController {
         root.put("service", "Ledgr RBI Account Aggregator (AA) & Student FinTech Backend");
         root.put("version", "1.0.0");
         root.put("status", "ONLINE");
-        root.put("architecture", "RESTful Web Application");
+        root.put("client", "JavaFX Native Desktop Application");
         root.put("timestamp", LocalDateTime.now().toString());
 
         Map<String, Object> endpoints = new LinkedHashMap<>();
@@ -67,7 +68,9 @@ public class ApiRootController {
         endpoints.put("GET /api/v1/tools/runway", "Scholarship runway calculator (custom burn & FD buffer options)");
         endpoints.put("GET /api/v1/tools/salary-sandbox", "Post-graduation CTC-to-in-hand salary simulator");
         endpoints.put("GET /api/v1/tools/roommate-splits", "Roommate expense splitter and settlement tracking");
-        endpoints.put("GET /api/v1/tools/renewal-warnings", "Auto-renewal early warnings & minimum balance protection alerts");
+        endpoints.put("GET /api/v1/tools/auto-renewals", "Feature 1: Auto-Renewal Early Warnings (7-day advance notice to maintain balance)");
+        endpoints.put("GET /api/v1/tools/min-balance-shield", "Feature 2: Minimum Balance Shield (MAB compliance & breach prevention)");
+        endpoints.put("GET /api/v1/tools/renewal-warnings", "Combined renewal warnings & buffer calculations");
 
         // Health
         endpoints.put("GET /api/v1/health", "System health check and live database metrics");

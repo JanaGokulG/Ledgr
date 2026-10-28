@@ -21,12 +21,13 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     List<TransactionEntity> findAllByOrderByTransactionTimestampDesc();
 
     @Query("SELECT t FROM TransactionEntity t WHERE " +
-           "(:search IS NULL OR LOWER(t.narration) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           " LOWER(t.merchantPayee) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           " LOWER(t.category) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           " LOWER(t.paymentMode) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
-           "(:category IS NULL OR t.category = :category) AND " +
-           "(:txnType IS NULL OR t.txnType = :txnType) " +
+           "(:search IS NULL OR :search = '' OR " +
+           " LOWER(t.narration) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+           " LOWER(t.merchantPayee) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+           " LOWER(t.category) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+           " LOWER(t.paymentMode) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))) AND " +
+           "(:category IS NULL OR :category = '' OR t.category = :category) AND " +
+           "(:txnType IS NULL OR :txnType = '' OR t.txnType = :txnType) " +
            "ORDER BY t.transactionTimestamp DESC")
     Page<TransactionEntity> searchTransactions(@Param("search") String search,
                                               @Param("category") String category,
