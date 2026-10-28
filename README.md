@@ -48,21 +48,89 @@ The desktop frontend has been entirely removed, transforming Ledgr into a headle
 
 ## 🏁 Getting Started & Running the Backend
 
-### 1. Run with Maven Wrapper
-From the project root:
-```powershell
-# Windows
-.\mvnw.cmd spring-boot:run
+### 1. Prerequisites
+- **Java 21 LTS** or higher (verify with `java -version`)
+- **Maven 3.9+** (optional; the repository includes `mvnw.cmd` / `mvnw`)
+- **PostgreSQL** (optional; the backend automatically falls back to an in-memory H2 database with PostgreSQL compatibility mode if Postgres is not reachable)
 
-# Or standard Maven
+---
+
+### 2. Environment Configuration (`.env`)
+Create a `.env` file in the root directory (or copy from [`.env.example`](file:///d:/college%20related/SEM5/Laboratory%20courses/Java%20lab/.env.example)):
+
+```env
+# Server
+SERVER_PORT=8085
+
+# Database Configuration (Defaults to local PostgreSQL with H2 fallback)
+DB_URL=jdbc:postgresql://localhost:5432/ledgr_db
+DB_USERNAME=postgres
+DB_PASSWORD=your_password
+
+# Banking Sandbox API (Plaid) Credentials
+BANKING_API_CLIENT_ID=your_plaid_client_id
+BANKING_API_SECRET=your_plaid_sandbox_secret
+BANKING_API_ENV=sandbox
+BANKING_API_BASE_URL=https://sandbox.plaid.com
+BANKING_INSTITUTION_ID=ins_20
+BANKING_WEBHOOK_URL=https://www.genericwebhookurl.com/webhook
+BANKING_OVERRIDE_USERNAME=user_good
+BANKING_OVERRIDE_PASSWORD=pass_good
+TRANSACTION_DELAY_MS=150
+```
+
+> [!NOTE]
+> Environment variables in `.env` are automatically loaded into Spring Boot properties via [`DotenvLoader`](file:///d:/college%20related/SEM5/Laboratory%20courses/Java%20lab/src/main/java/com/ledgr/config/DotenvLoader.java) upon startup.
+
+---
+
+### 3. Build & Run the Application
+
+#### Option A: Using the Maven Wrapper (Recommended)
+From the project root directory:
+
+**Windows (PowerShell / Command Prompt):**
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+**Linux / macOS / Git Bash:**
+```bash
+./mvnw spring-boot:run
+```
+
+#### Option B: Using Installed Maven
+```bash
 mvn spring-boot:run
 ```
 
-The web server will start on port **`8085`** at `http://localhost:8085`.
+#### Option C: Build Executable JAR and Run
+```powershell
+# Build packaged JAR
+.\mvnw.cmd clean package -DskipTests
 
-### 2. Run Automated Tests
+# Run JAR
+java -jar target/ledgr-backend-1.0.0-SNAPSHOT.jar
+```
+
+The web server will boot on port **`8085`**:
+- **Interactive Web Dashboard**: [http://localhost:8085](http://localhost:8085)
+- **API Overview & Directory**: [http://localhost:8085/api/v1](http://localhost:8085/api/v1)
+- **Health Check**: [http://localhost:8085/api/v1/health](http://localhost:8085/api/v1/health) or [http://localhost:8085/actuator/health](http://localhost:8085/actuator/health)
+
+---
+
+### 4. Running Automated Tests
+Run integration tests (including Plaid banking sandbox tests and entity persistence):
+
+**Windows:**
 ```powershell
 .\mvnw.cmd test
+```
+
+**Linux / macOS:**
+```bash
+./mvnw test
 ```
 
 ---
@@ -72,11 +140,21 @@ The web server will start on port **`8085`** at `http://localhost:8085`.
 ### 1. System & Health
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/` or `/api` or `/api/v1` | Complete API directory & service metadata |
+| `GET` | `/` | Web UI Dashboard |
+| `GET` | `/api` or `/api/v1` | Complete API directory & service metadata |
 | `GET` | `/api/v1/health` | System health status & database entity metrics |
 | `GET` | `/actuator/health` | Spring Boot Actuator health endpoint |
 
-### 2. RBI AA Protocol Sandbox
+### 2. Plaid Banking Sandbox Gateway
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/banking/sync` | Master sync: Fetches live data from Banking API and ingests into Database with simulated delay |
+| `POST` | `/api/v1/banking/transactions/sync` | Fetches transactions from Banking API and persists directly into Database |
+| `GET` | `/api/v1/banking/transactions` | Lists all transactions currently stored in the database |
+| `GET` | `/api/v1/banking/token` | Returns active or newly generated sandbox access token |
+| `GET` | `/api/v1/banking/accounts` | Fetches account information from Banking Sandbox |
+
+### 3. RBI AA Protocol Sandbox
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/v1/aa/consents` | Create a new ReBIT AA consent request |
@@ -87,7 +165,7 @@ The web server will start on port **`8085`** at `http://localhost:8085`.
 | `GET` | `/api/v1/aa/fi/fetch/{sessionId}` | Fetch decrypted ReBIT statement payload |
 | `GET` | `/api/v1/aa/mock/raw` | Get raw multi-account mock dataset |
 
-### 3. FIU Data Ingestion & Ledger
+### 4. FIU Data Ingestion & Ledger
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/v1/fiu/sync` | One-click full AA handshake and database sync |
@@ -97,7 +175,7 @@ The web server will start on port **`8085`** at `http://localhost:8085`.
 | `GET` | `/api/v1/fiu/transactions` | Search & filter transactions (`search`, `category`, `txnType`, `page`, `size`) |
 | `GET` | `/api/v1/fiu/analytics/overview` | Student financial overview (balances, burn rate, runway, breakdown) |
 
-### 4. Real-time Transaction Simulator
+### 5. Real-Time Transaction Simulator
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/v1/simulator/transactions/generate` | Generate an instant realistic transaction and update balances |
@@ -106,7 +184,7 @@ The web server will start on port **`8085`** at `http://localhost:8085`.
 | `GET` | `/api/v1/simulator/stream/status` | Check if streaming is currently running |
 | `GET` | `/api/v1/simulator/stream/events` | **Server-Sent Events (SSE)** live stream feed |
 
-### 5. FinTech Tools
+### 6. Student FinTech Calculators
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/v1/tools/runway` | Scholarship runway calculator (`customMonthlyBurn`, `includeFdBuffer`) |
@@ -124,15 +202,18 @@ curl http://localhost:8085/api/v1/health
 # 2. Synchronize Bank Accounts from RBI AA Sandbox
 curl -X POST http://localhost:8085/api/v1/fiu/sync
 
-# 3. View Aggregated Financial Overview & Runway
+# 3. Synchronize Live Banking Sandbox Data (Plaid)
+curl -X POST http://localhost:8085/api/v1/banking/sync
+
+# 4. View Aggregated Financial Overview & Runway
 curl http://localhost:8085/api/v1/fiu/analytics/overview
 
-# 4. Search Transactions (e.g., Swiggy, UPI, Dining)
+# 5. Search Transactions (e.g., Swiggy, UPI, Dining)
 curl "http://localhost:8085/api/v1/fiu/transactions?search=swiggy"
 
-# 5. Generate Instant Simulated Transaction
+# 6. Generate Instant Simulated Transaction
 curl -X POST http://localhost:8085/api/v1/simulator/transactions/generate
 
-# 6. Test Salary Sandbox
+# 7. Test Student Salary Sandbox
 curl "http://localhost:8085/api/v1/tools/salary-sandbox?ctc=1200000&city=Bangalore"
 ```
