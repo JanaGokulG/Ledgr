@@ -67,6 +67,7 @@ public class ApiRootController {
         endpoints.put("GET /api/v1/tools/runway", "Scholarship runway calculator (custom burn & FD buffer options)");
         endpoints.put("GET /api/v1/tools/salary-sandbox", "Post-graduation CTC-to-in-hand salary simulator");
         endpoints.put("GET /api/v1/tools/roommate-splits", "Roommate expense splitter and settlement tracking");
+        endpoints.put("GET /api/v1/tools/renewal-warnings", "Auto-renewal early warnings & minimum balance protection alerts");
 
         // Health
         endpoints.put("GET /api/v1/health", "System health check and live database metrics");

@@ -30,6 +30,7 @@ The desktop frontend has been entirely removed, transforming Ledgr into a headle
   - **Scholarship Runway Calculator**: Projects safe burn runway (in months) with customizable burn rates and FD buffer inclusions.
   - **Post-Graduation Salary Sandbox**: In-hand salary simulator factoring New Tax Regime slabs, 12% EPF, and city cost-of-living indices (Bangalore, Mumbai, Delhi, Hyderabad, Pune).
   - **Roommate Escrow & Expense Splitter**: Identifies shared dining, rent, groceries, and Wi-Fi IOUs and computes equal shares.
+  - **Auto-Renewal Early Warnings & Minimum Balance Shield**: Scans upcoming subscriptions and Recurring Deposit (RD) auto-debits, calculating days remaining and warning if the payment will bounce or breach the minimum balance threshold.
 
 ---
 
@@ -190,6 +191,7 @@ Run integration tests (including Plaid banking sandbox tests and entity persiste
 | `GET` | `/api/v1/tools/runway` | Scholarship runway calculator (`customMonthlyBurn`, `includeFdBuffer`) |
 | `GET` | `/api/v1/tools/salary-sandbox` | Post-graduation CTC-to-in-hand salary simulator (`ctc`, `city`) |
 | `GET` | `/api/v1/tools/roommate-splits` | Roommate shared expense ledger & split debts calculation (`totalRoommates`) |
+| `GET` | `/api/v1/tools/renewal-warnings` | **Auto-Renewal Early Warnings**: Detects recurring debits & warns if balance dips below threshold (`minBalanceThreshold`, `lookaheadDays`, `simulatedBalance`) |
 
 ---
 
@@ -216,4 +218,7 @@ curl -X POST http://localhost:8085/api/v1/simulator/transactions/generate
 
 # 7. Test Student Salary Sandbox
 curl "http://localhost:8085/api/v1/tools/salary-sandbox?ctc=1200000&city=Bangalore"
+
+# 8. Check Auto-Renewal Early Warnings & Minimum Balance Protection
+curl "http://localhost:8085/api/v1/tools/renewal-warnings?minBalanceThreshold=1000&lookaheadDays=14"
 ```
