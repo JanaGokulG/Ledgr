@@ -21,7 +21,7 @@ public class BankingSyncServiceTest {
     @Test
     @DisplayName("Should successfully authenticate and fetch accounts from Banking Sandbox API")
     void testBankingAccountsFetch() {
-        String token = bankingSyncService.getOrGenerateAccessToken(false);
+        String token = bankingSyncService.getOrGenerateAccessToken(true);
         assertNotNull(token, "Access token should not be null");
         assertTrue(token.startsWith("access-sandbox-"), "Access token should start with access-sandbox-");
 

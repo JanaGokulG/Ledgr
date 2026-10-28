@@ -34,7 +34,7 @@ public class BankingSyncService {
     private final ObjectMapper objectMapper;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
+            .connectTimeout(Duration.ofSeconds(30))
             .build();
 
     // Cache active access token for quick repeated endpoint inspections
@@ -50,7 +50,7 @@ public class BankingSyncService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
-                    .timeout(Duration.ofSeconds(20))
+                    .timeout(Duration.ofSeconds(35))
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 

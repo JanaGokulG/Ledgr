@@ -5,18 +5,13 @@ spring:
   application:
     name: ledgr-backend
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ledgr_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:jana}
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
-      connection-timeout: 2000
-      idle-timeout: 30000
 
   jpa:
     hibernate:
@@ -52,3 +47,10 @@ banking:
     - investments
     - liabilities
   transaction-delay-ms: ${TRANSACTION_DELAY_MS:150}
+
+ledgr:
+  sandbox:
+    mock-data-path: designmode_sample.json
+    fiu-id: LEDGR_FIU_IN
+    aa-gateway-url: http://localhost:8085/api/v1/aa
+    webhook-url: http://localhost:8085/api/v1/fiu/webhooks

@@ -1,68 +1,35 @@
-# Ledgr 🛡️💸
-### *Privacy-First Student Financial Planning OS (RBI Account Aggregator Desktop Edition)*
+# Ledgr Backend Web Application 🛡️💸
+### *RBI Account Aggregator (AA) & Student FinTech OS REST API Engine*
 
 ![Java 21](https://img.shields.io/badge/Java-21%20LTS-orange.svg)
-![JavaFX](https://img.shields.io/badge/JavaFX-21-blue.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-informational.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-informational.svg)
+![H2 Database](https://img.shields.io/badge/H2-In--Memory%20Fallback-blue.svg)
 ![RBI AA Framework](https://img.shields.io/badge/RBI%20AA-ReBIT%20Standard-purple.svg)
 
-**Ledgr** is a secure, JavaFX-based desktop fintech application engineered specifically for student personal financial planning. Operating as a **Financial Information User (FIU)** under the **Reserve Bank of India (RBI) Account Aggregator (AA)** framework, it natively streams encrypted, standardized financial data directly from banks—eliminating privacy risks through local statement processing and zero-cloud data storage.
+**Ledgr** is a high-performance backend REST web application engineered for student personal financial planning operating under the **Reserve Bank of India (RBI) Account Aggregator (AA)** framework. It features stepped cryptographic AA handshake emulation, ReBIT financial data ingestion, real-time live transaction streaming, scholarship runway forecasting, and graduate salary tax simulation.
+
+The desktop frontend has been entirely removed, transforming Ledgr into a headless, cloud-ready REST API service.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Features & Capabilities
 
-- **🏛️ RBI Account Aggregator (AA) Integration (Setu Gateway Standard)**:
-  - Stepped cryptographic handshake (Consent Negotiation $\rightarrow$ OTP Signature $\rightarrow$ ECDH Key-Exchange $\rightarrow$ 256-bit Decryption).
-  - Multi-account ReBIT ingestion: **Savings Accounts**, **Fixed Deposits** (tenure & compounding), and **Recurring Deposits** (installment schedules).
-- **🛡️ Global Privacy Hotkey Shield (`Ctrl + Shift + H`)**:
-  - Instant hardware-level UI masking that blurs balances (`₹•••,•••.••`) and account numbers to prevent shoulder-surfing in dorms and classrooms.
-- **⚡ Real-Time Live Transaction Stream**:
-  - Live background transaction pump that simulates realistic student cash flows (Swiggy, Ola, Amazon, Netflix subscriptions, University stipends, Freelance credits, and Roommate split IOUs).
-- **🎓 Scholarship Runway Calculator**:
-  - Projects safe burn-rate runway (in months) by analyzing historical living costs against liquid savings and fixed deposit buffers.
-- **🏷️ Intelligent Student FinTech Categorizer**:
-  - Automatically identifies UPI merchant handles (`swiggy@icici`, `simpl@axis`, `amzn@sbi`, `nps@trust`) into clean financial categories.
-- **🤝 Roommate Escrow & Expense Splitter**:
-  - Dedicated ledger for tracking shared rent, utilities, and grocery debts with auto-settlement detection.
-- **💼 Post-Graduation Salary Sandbox**:
-  - Interactive CTC-to-in-hand salary simulator factoring in New Tax Regime, EPF, and city cost-of-living indices (Bangalore, Mumbai, Delhi, Hyderabad, Pune).
-
----
-
-## 🏗️ Architecture Overview
-
-```mermaid
-graph TD
-    subgraph Desktop Process (JVM 21)
-        subgraph JavaFX Native Window
-            GUI[Ledgr Desktop GUI<br/>Dark Modern Interface]
-            HOTKEY[Global Privacy Shield<br/>Ctrl + Shift + H Hook]
-            SEARCH[Instant Filter Engine]
-        end
-
-        subgraph Embedded Spring Runtime
-            FIU[FIU Data Ingestion Service]
-            CAT[Fintech Category Engine]
-            AA[Setu AA Sandbox Gateway<br/>Local In-Memory Protocol]
-            SIM[Real-Time Transaction Pump]
-        end
-    end
-
-    subgraph Local Storage
-        DB[(Local PostgreSQL ledgr_db<br/>Zero Data Leakage)]
-    end
-
-    GUI --> FIU
-    HOTKEY --> GUI
-    SEARCH --> GUI
-    FIU --> AA
-    SIM --> DB
-    SIM --> GUI
-    FIU --> CAT --> DB
-    DB --> GUI
-```
+- **🏛️ RBI Account Aggregator (AA) Gateway Sandbox (`/api/v1/aa`)**:
+  - Full ReBIT-standard lifecycle: Consent negotiation $\rightarrow$ OTP approval $\rightarrow$ Key exchange session $\rightarrow$ Decrypted payload delivery.
+  - Multi-account support: Savings Accounts, Term Deposits (FD), and Recurring Deposits (RD).
+- **📥 FIU Ingestion & Data Management (`/api/v1/fiu`)**:
+  - One-click end-to-end sync (`POST /api/v1/fiu/sync`).
+  - Searchable, filterable transactions by merchant, category, type, and pagination.
+  - Comprehensive financial overview: net worth, monthly burn rate, scholarship runway, and category expense breakdown.
+- **⚡ Real-Time Live Transaction Pump (`/api/v1/simulator`)**:
+  - Instant simulated transaction injection (`POST /api/v1/simulator/transactions/generate`).
+  - Continuous background streaming (`POST /api/v1/simulator/stream/start?intervalSeconds=3`).
+  - Server-Sent Events (SSE) live stream feed (`GET /api/v1/simulator/stream/events`).
+- **🎓 Student FinTech Calculators (`/api/v1/tools`)**:
+  - **Scholarship Runway Calculator**: Projects safe burn runway (in months) with customizable burn rates and FD buffer inclusions.
+  - **Post-Graduation Salary Sandbox**: In-hand salary simulator factoring New Tax Regime slabs, 12% EPF, and city cost-of-living indices (Bangalore, Mumbai, Delhi, Hyderabad, Pune).
+  - **Roommate Escrow & Expense Splitter**: Identifies shared dining, rent, groceries, and Wi-Fi IOUs and computes equal shares.
 
 ---
 
@@ -70,89 +37,102 @@ graph TD
 
 | Layer | Technology |
 | :--- | :--- |
-| **Language** | Java 21 (LTS) |
-| **Desktop GUI** | JavaFX 21 (OpenJFX) + Modern CSS Design System |
-| **Backend & IoC** | Spring Boot 3.3.4 (Embedded in-process runtime) |
-| **Data Persistence** | Spring Data JPA + Hibernate 6 + PostgreSQL 18 (with H2 fallback) |
+| **Language** | Java 21+ / OpenJDK |
+| **Framework** | Spring Boot 3.3.4 (REST Web Application & Embedded Tomcat on Port 8085) |
+| **Data Persistence** | Spring Data JPA + Hibernate 6 + PostgreSQL (with automatic zero-config H2 fallback) |
 | **JSON Serialization** | Jackson Data Processor (JSR310 Datatype) with lenient ReBIT aliasing |
-| **Boilerplate Reduction** | Project Lombok |
-| **Build Tool** | Apache Maven 3.9+ |
+| **Monitoring** | Spring Boot Actuator (`/actuator/health`) |
+| **Build Tool** | Apache Maven Wrapper (`mvnw.cmd` / `mvn`) |
 
 ---
 
-## 🏁 Getting Started
+## 🏁 Getting Started & Running the Backend
 
-### 1. Prerequisites
-- **Java 21 JDK** installed (`java -version`)
-- **PostgreSQL** running on port `5432` (Default database: `ledgr_db`)
-
-### 2. Configuration
-Verify database credentials in [`src/main/resources/application.yml`](src/main/resources/application.yml):
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/ledgr_db
-    username: postgres
-    password: YOUR_PASSWORD
-```
-
-### 3. Launching the Desktop Application
-Run using the included Maven Wrapper:
+### 1. Run with Maven Wrapper
+From the project root:
 ```powershell
 # Windows
-.\mvnw.cmd javafx:run
+.\mvnw.cmd spring-boot:run
 
-# Linux / macOS
-./mvnw javafx:run
+# Or standard Maven
+mvn spring-boot:run
 ```
 
-### 4. Running Automated Tests
+The web server will start on port **`8085`** at `http://localhost:8085`.
+
+### 2. Run Automated Tests
 ```powershell
 .\mvnw.cmd test
 ```
 
 ---
 
-## 📂 Project Structure
+## 📡 API Endpoints Reference
 
-```
-Ledgr/
-├── .tools/                               # Local portable build tools
-├── src/
-│   ├── main/
-│   │   ├── java/com/ledgr/sandbox/
-│   │   │   ├── config/                   # PostgreSQL pre-check & DB initializers
-│   │   │   ├── controller/               # Setu AA & FIU REST endpoints
-│   │   │   ├── dto/
-│   │   │   │   ├── aa/                   # Setu AA protocol DTOs (Consent, FI Session)
-│   │   │   │   └── rebit/                # ReBIT standard financial schemas
-│   │   │   ├── entity/                   # JPA Entities (Accounts, Transactions, Consents)
-│   │   │   ├── repository/               # Spring Data JPA repositories
-│   │   │   ├── service/                  # AA Gateway simulator, Ingestion & Live Pump
-│   │   │   ├── ui/                       # JavaFX Desktop Application & View Components
-│   │   │   └── util/                     # Merchant & student transaction categorizers
-│   │   └── resources/
-│   │       ├── static/index.html         # Embedded web test console (Port 8085)
-│   │       ├── styles/ledgr-dark.css     # Premium dark-theme JavaFX stylesheet
-│   │       ├── application.yml           # Primary PostgreSQL configuration
-│   │       └── application-h2.yml        # In-memory test profile
-│   └── test/                             # Unit & End-to-End integration test suite
-├── designmode_sample.json                # ReBIT multi-account mock dataset
-├── pom.xml                               # Maven project dependencies & plugins
-├── .gitignore                            # Git ignore rules
-└── README.md                             # Project documentation
-```
+### 1. System & Health
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` or `/api` or `/api/v1` | Complete API directory & service metadata |
+| `GET` | `/api/v1/health` | System health status & database entity metrics |
+| `GET` | `/actuator/health` | Spring Boot Actuator health endpoint |
+
+### 2. RBI AA Protocol Sandbox
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/aa/consents` | Create a new ReBIT AA consent request |
+| `GET` | `/api/v1/aa/consents/{consentId}` | Fetch status of consent |
+| `POST` | `/api/v1/aa/consents/{consentId}/approve` | Verify OTP (default `123456`) and activate consent |
+| `POST` | `/api/v1/aa/consents/{consentId}/revoke` | Revoke active consent |
+| `POST` | `/api/v1/aa/fi/request` | Initiate financial information fetch session |
+| `GET` | `/api/v1/aa/fi/fetch/{sessionId}` | Fetch decrypted ReBIT statement payload |
+| `GET` | `/api/v1/aa/mock/raw` | Get raw multi-account mock dataset |
+
+### 3. FIU Data Ingestion & Ledger
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/fiu/sync` | One-click full AA handshake and database sync |
+| `GET` | `/api/v1/fiu/accounts` | List all synchronized bank accounts |
+| `GET` | `/api/v1/fiu/accounts/{accountId}` | Get details of a single account |
+| `GET` | `/api/v1/fiu/accounts/{accountId}/transactions` | Get transactions for a specific account |
+| `GET` | `/api/v1/fiu/transactions` | Search & filter transactions (`search`, `category`, `txnType`, `page`, `size`) |
+| `GET` | `/api/v1/fiu/analytics/overview` | Student financial overview (balances, burn rate, runway, breakdown) |
+
+### 4. Real-time Transaction Simulator
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/simulator/transactions/generate` | Generate an instant realistic transaction and update balances |
+| `POST` | `/api/v1/simulator/stream/start?intervalSeconds=3` | Start continuous background transaction stream |
+| `POST` | `/api/v1/simulator/stream/stop` | Stop background stream |
+| `GET` | `/api/v1/simulator/stream/status` | Check if streaming is currently running |
+| `GET` | `/api/v1/simulator/stream/events` | **Server-Sent Events (SSE)** live stream feed |
+
+### 5. FinTech Tools
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/tools/runway` | Scholarship runway calculator (`customMonthlyBurn`, `includeFdBuffer`) |
+| `GET` | `/api/v1/tools/salary-sandbox` | Post-graduation CTC-to-in-hand salary simulator (`ctc`, `city`) |
+| `GET` | `/api/v1/tools/roommate-splits` | Roommate shared expense ledger & split debts calculation (`totalRoommates`) |
 
 ---
 
-## ⌨️ Desktop Shortcuts
+## ⚡ Quick Start Workflow via cURL / PowerShell
 
-- **`Ctrl + Shift + H`**: Toggle **Privacy Shield** (Instantly masks all balances and account numbers).
-- **`⚡ Sync AA Gateway`**: Executes the 5-step ReBIT Account Aggregator statement fetch and PostgreSQL ingestion.
-- **`🔴 / 🟢 Stream Toggle`**: Starts/Stops the real-time background student transaction simulator (3s interval).
+```powershell
+# 1. Check health
+curl http://localhost:8085/api/v1/health
 
----
+# 2. Synchronize Bank Accounts from RBI AA Sandbox
+curl -X POST http://localhost:8085/api/v1/fiu/sync
 
-## 📄 License
+# 3. View Aggregated Financial Overview & Runway
+curl http://localhost:8085/api/v1/fiu/analytics/overview
 
-This project is developed for student financial literacy and laboratory research. Built under the **RBI Account Aggregator Guidelines**.
+# 4. Search Transactions (e.g., Swiggy, UPI, Dining)
+curl "http://localhost:8085/api/v1/fiu/transactions?search=swiggy"
+
+# 5. Generate Instant Simulated Transaction
+curl -X POST http://localhost:8085/api/v1/simulator/transactions/generate
+
+# 6. Test Salary Sandbox
+curl "http://localhost:8085/api/v1/tools/salary-sandbox?ctc=1200000&city=Bangalore"
+```
