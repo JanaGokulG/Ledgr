@@ -25,10 +25,11 @@ The user interface is built with an authentic, professional dark fintech design 
    - [Feature 5: Scholarship Runway & CTC Salary Sandbox](#5-scholarship-runway--ctc-salary-sandbox)
    - [Feature 6: RBI AA Gateway & Real-Time Simulator](#6-rbi-aa-gateway--real-time-simulator)
    - [Feature 7: Global Privacy Hotkey Shield (Ctrl+Shift+H)](#7-global-privacy-hotkey-shield-ctrlshifth)
-4. [Where Does the Data Come From? (Data Provenance & Storage)](#-where-does-the-data-come-from-data-provenance--storage)
-5. [REST API Directory & Quick-Start](#-rest-api-directory--quick-start)
-6. [Automated Test Suite](#-automated-test-suite)
-7. [Troubleshooting & FAQ](#-troubleshooting--faq)
+4. [Desktop UI Directory: Features, Buttons & Layouts](#-desktop-ui-directory-features-buttons--layouts)
+5. [Where Does the Data Come From? (Data Provenance & Storage)](#-where-does-the-data-come-from-data-provenance--storage)
+6. [REST API Directory & Quick-Start](#-rest-api-directory--quick-start)
+7. [Automated Test Suite](#-automated-test-suite)
+8. [Troubleshooting & FAQ](#-troubleshooting--faq)
 
 ---
 
@@ -246,6 +247,127 @@ Ledgr is structured into distinct, modular financial intelligence and protection
   Allows students to manage finances in public libraries, classrooms, or hostel rooms without exposing balances to shoulder-surfing.
 - **Where the data is from**:
   - Client-side reactive JavaFX state (`SimpleBooleanProperty`) that intercepts value formatters.
+
+---
+
+## 🖥️ Desktop UI Directory: Features, Buttons & Layouts
+
+Below is the complete reference mapping every UI feature, layout container, button, and user control to its exact source file in the project folder.
+
+### 🏛️ Main UI Architecture Files
+
+| Component | Responsibility | Project File Path |
+| :--- | :--- | :--- |
+| **Native JavaFX Desktop UI Engine** | Root application lifecycle, scene graph, navigation routing, dynamic view switching, hotkey listener (`Ctrl+Shift+H`), and periodic auto-refresh timeline (every 3 seconds). | [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java) |
+| **Fintech Dark Design System (CSS)** | All styling tokens, glassmorphism card highlights, badge palettes (`badge-emerald`, `badge-rose`, `badge-amber`, `badge-purple`), table columns, buttons, and scrollbars. | [`src/main/resources/styles/ledgr-dark.css`](file:///src/main/resources/styles/ledgr-dark.css) |
+| **Application Launcher & Spring Context** | Bootstraps Spring Boot with JavaFX headless disabled (`.headless(false)`) and launches the desktop stage. | [`src/main/java/com/ledgr/LedgrApplication.java`](file:///src/main/java/com/ledgr/LedgrApplication.java) |
+| **Web Landing Page Fallback** | Fallback HTML landing page informing browser users that Ledgr runs natively as a desktop application and links to the REST API. | [`src/main/resources/static/index.html`](file:///src/main/resources/static/index.html) |
+
+---
+
+### 📐 Master Application Layout (`LedgrDesktopApp.java`)
+
+The desktop application is built with a native JavaFX root container (`1260 × 820` minimum resolution):
+- **Root Layout (`BorderPane`)**: Defined at [`LedgrDesktopApp.java#L98-L113`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L98-L113).
+  - **Left Region (`sidebar`)**: `VBox` (`240px` fixed width) styled via `.sidebar`.
+  - **Top Region (`topHeader`)**: `HBox` (`64px` height) styled via `.top-header`.
+  - **Center Region (`contentArea`)**: `StackPane` containing a responsive `ScrollPane` that mounts views dynamically with zero flicker.
+  - **Global Hotkey Handler**: Listens on the `Scene` for `Ctrl + Shift + H` ([`LedgrDesktopApp.java#L124-L131`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L124-L131)) to mask financial figures with `₹ ••••••`.
+  - **Live DB Polling Timeline**: JavaFX `Timeline` running on a 3-second cycle to smoothly update active screens without freezing the UI thread ([`LedgrDesktopApp.java#L134-L136`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L134-L136)).
+
+---
+
+### 🔘 Comprehensive Feature, Layout & Button Map
+
+#### 1. Sidebar Navigation & Top Header Bar
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L157-L283`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L157-L283)
+- **Layout Containers**: `VBox` (sidebar header, nav buttons, user footer), `HBox` (top header row).
+- **Buttons & Controls**:
+  - `📊 Accounts & Net Worth` (Button): Switches view to `ACCOUNTS`.
+  - `📜 Ledger & Transactions` (Button): Switches view to `TRANSACTIONS`.
+  - `⏰ Auto-Renewal Warnings` (Button): Switches view to `RENEWALS`.
+  - `🛡️ Minimum Balance Shield` (Button): Switches view to `SHIELD`.
+  - `🎓 Scholarship & Salary CTC` (Button): Switches view to `STUDENT_TOOLS`.
+  - `⚡ AA Gateway & Simulator` (Button): Switches view to `SIMULATOR`.
+  - `🛡️ Privacy: OFF / ON` (Button): Header button that toggles privacy mode across the app.
+  - `🔄 Sync AA Gateway` (Button): Header button triggering an immediate ReBIT AA synchronization in a background thread.
+  - `● STREAMING / ● PAUSED` (Status Pill Label): Real-time simulator status indicator.
+
+#### 2. Accounts & Net Worth Overview
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L364-L516`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L364-L516)
+- **Supporting Classes**: [`AccountRepository.java`](file:///src/main/java/com/ledgr/repository/AccountRepository.java), [`AccountEntity.java`](file:///src/main/java/com/ledgr/entity/AccountEntity.java)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - `GridPane` (4-column metric card grid for Total Net Worth, Liquid Savings, Fixed Deposit Buffer, Recurring Deposits).
+  - `VBox` + `HBox` + 2-row `GridPane` (Individual bank account cards with IFSC, Holder, Nominee status, Interest Rate, Maturity Date, CKYC status).
+- **Buttons & Controls**:
+  - Reactive display refreshed automatically via the background timeline.
+
+#### 3. Live Ledger & Transaction Feed
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L522-L646`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L522-L646)
+- **Supporting Classes**: [`TransactionRepository.java`](file:///src/main/java/com/ledgr/repository/TransactionRepository.java), [`MerchantCategorizerUtil.java`](file:///src/main/java/com/ledgr/util/MerchantCategorizerUtil.java), [`RealtimeTransactionSimulatorService.java`](file:///src/main/java/com/ledgr/sandbox/service/RealtimeTransactionSimulatorService.java)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - `HBox` (Toolbar for search, filter dropdown, counter, and action button).
+  - `TableView<TransactionEntity>` (Timestamp, Narration & Payee, Category, Payment Mode, Type Badge [Credit/Debit], Amount, Post-Txn Balance).
+- **Buttons & Controls**:
+  - `searchField` (`TextField`): Instant live filtering across merchant name, narration, or category.
+  - `typeFilter` (`ComboBox<String>`): Dropdown filter (`All Types`, `DEBIT`, `CREDIT`).
+  - `⚡ Inject Live Transaction` (Button): Manually triggers and persists a new realistic transaction and updates the table.
+
+#### 4. Auto-Renewal Early Warnings
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L652-L847`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L652-L847)
+- **Supporting Classes**: [`FintechToolsController.java#L110-L198`](file:///src/main/java/com/ledgr/sandbox/controller/FintechToolsController.java#L110-L198), [`RecurringRenewalRepository.java`](file:///src/main/java/com/ledgr/repository/RecurringRenewalRepository.java)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - `VBox` (Status banner: `.banner-warning`, `.banner-critical`, or `.banner-secure` with NACH/e-mandate compliance advice).
+  - `GridPane` (4-column metric cards: Due in 7 Days, Funding Account Balance, Total Monthly Commitment, 7-Day Buffer Ratio).
+  - `HBox` (Filter toolbar).
+  - `VBox` (List of individual recurring service cards with due date warnings and account details).
+- **Buttons & Controls**:
+  - `ToggleGroup` with Toggle Buttons: `All (N)`, `⚠️ Due Within 7 Days (N)`, `Upcoming Later (N)`.
+
+#### 5. Minimum Balance Shield (MAB Protection)
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L853-L1047`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L853-L1047)
+- **Supporting Classes**: [`FintechToolsController.java#L200-L310`](file:///src/main/java/com/ledgr/sandbox/controller/FintechToolsController.java#L200-L310)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - `HBox` (Simulation parameter bar).
+  - `VBox` (Status alert banner with immediate deposit action instructions).
+  - `GridPane` (4-column metric cards: Current Balance, Projected 7-Day Balance, Safety Buffer, Required Top-Up).
+  - `TableView<Map<String, Object>>` (Threat timeline ledger showing chronological deduction impact and breach risks).
+- **Buttons & Controls**:
+  - `thresholdCombo` (`ComboBox<BigDecimal>`): Bank minimum threshold selector (`₹500`, `₹1,000`, `₹2,500`, `₹5,000`).
+  - `simBalanceField` (`TextField`): Custom balance tester to preview breach risk without modifying DB records.
+  - `🛡️ Recalculate Shield` (Button): Runs projection calculations against active renewals.
+  - `Reset to Real` (Button): Resets simulated inputs to live database balance.
+
+#### 6. Scholarship Runway & Post-Grad CTC Salary Sandbox
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L1053-L1183`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L1053-L1183)
+- **Supporting Classes**: [`FintechToolsController.java#L33-L108`](file:///src/main/java/com/ledgr/sandbox/controller/FintechToolsController.java#L33-L108)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - **Runway Card (`VBox`)**: `HBox` control bar + `HBox` large KPI result box.
+  - **Salary Sandbox Card (`VBox`)**: `HBox` input controls + 5-column `GridPane` (Monthly Gross, Monthly Net In-Hand, Annual Tax, City Living Cost, Projected Savings).
+- **Buttons & Controls**:
+  - `burnField` (`TextField`): Monthly burn rate (auto-initialized from 6-month transaction debit history).
+  - `fdToggle` (`CheckBox`): Toggle to include Fixed Deposits as emergency reserves.
+  - `Calculate Runway` (Button): Calculates runway in months and status (`COMFORTABLE`, `MODERATE`, `CRITICAL`).
+  - `ctcField` (`TextField`): Annual CTC amount in ₹.
+  - `cityCombo` (`ComboBox<String>`): Placement city dropdown (`Bangalore`, `Mumbai`, `Delhi`, `Hyderabad`, `Pune`).
+  - `Simulate In-Hand` (Button): Calculates take-home pay, EPF, and taxes under FY 2024-25 New Tax Regime.
+
+#### 7. RBI AA Gateway & Real-Time Simulator
+- **File**: [`src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L1189-L1285`](file:///src/main/java/com/ledgr/ui/LedgrDesktopApp.java#L1189-L1285)
+- **Supporting Classes**: [`FiuIngestionService.java`](file:///src/main/java/com/ledgr/sandbox/service/FiuIngestionService.java), [`RealtimeTransactionSimulatorService.java`](file:///src/main/java/com/ledgr/sandbox/service/RealtimeTransactionSimulatorService.java), [`AccountAggregatorSandboxController.java`](file:///src/main/java/com/ledgr/sandbox/controller/AccountAggregatorSandboxController.java), [`SimulatorController.java`](file:///src/main/java/com/ledgr/sandbox/controller/SimulatorController.java)
+- **Layout Containers**:
+  - `VBox` (Root container).
+  - `VBox` (`aaCard`): Description + action `HBox` with status label.
+  - `VBox` (`simCard`): Description + action `HBox` with stream controls.
+- **Buttons & Controls**:
+  - `🔄 Execute Multi-Phase AA Sync` (Button): Executes full 5-phase AA handshake in background thread.
+  - `⏸️ Pause / ▶️ Resume Simulator Stream` (Button): Toggles the background transaction generator thread (1.2s – 3.2s delay).
+  - `⚡ Inject 1 Mock Transaction` (Button): Injects an instant realistic mock transaction.
 
 ---
 
